@@ -275,6 +275,121 @@ function Dashboard({ user, logout }) {
   const [processing, setProcessing] = useState(false);
   const [processingLog, setProcessingLog] = useState([]);
   const [processedFile, setProcessedFile] = useState(null);
+  const [automatedJob, setAutomatedJob] = useState(null);
+  const [jobStatus, setJobStatus] = useState("idle"); // idle, processing, completed, failed
+
+  const handleAutomatedProcessing = async () => {
+    if (!selectedFile) return;
+
+    setJobStatus("processing");
+    setProcessingLog(["Starting automated processing via GitHub Actions..."]);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_BASE}/process-automated/${selectedFile.id}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000, // 10 seconds to start the job
+        }
+      );
+
+      const result = response.data;
+      setAutomatedJob(result);
+      setProcessingLog([
+        "✅ Processing job started on GitHub Actions",
+        `📋 Job ID: ${result.job_id}`,
+        `⏱️ Estimated time: ${result.estimated_time}`,
+        "🔄 Monitoring progress...",
+      ]);
+
+      // Start polling for job status
+      pollJobStatus(result.job_id);
+    } catch (err) {
+      console.error("Automated processing error:", err);
+      setJobStatus("failed");
+      setProcessingLog([
+        "❌ Failed to start automated processing",
+        err.response?.data?.error || err.message,
+      ]);
+    }
+  };
+
+  const pollJobStatus = async (jobId) => {
+    const token = localStorage.getItem("token");
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes max (5 second intervals)
+
+    const poll = async () => {
+      try {
+        attempts++;
+        const response = await axios.get(`${API_BASE}/job-status/${jobId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const status = response.data;
+
+        if (status.status === "completed") {
+          setJobStatus("completed");
+          setProcessingLog((prev) => [
+            ...prev,
+            "✅ Processing completed successfully!",
+            "📥 File ready for download",
+          ]);
+
+          setProcessedFile({
+            isAutomated: true,
+            jobId: jobId,
+            downloadFileId: status.download_file_id,
+            downloadFilename: status.download_filename,
+          });
+        } else if (status.status === "failed") {
+          setJobStatus("failed");
+          setProcessingLog((prev) => [
+            ...prev,
+            "❌ Processing failed on GitHub Actions",
+            `Error: ${status.error || "Unknown error"}`,
+          ]);
+        } else if (attempts < maxAttempts) {
+          // Still processing, update log occasionally
+          if (attempts % 6 === 0) {
+            // Every 30 seconds
+            setProcessingLog((prev) => [
+              ...prev,
+              `🔄 Still processing... (${Math.floor((attempts * 5) / 60)} min ${
+                (attempts * 5) % 60
+              } sec)`,
+            ]);
+          }
+
+          // Continue polling
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else {
+          // Timeout
+          setJobStatus("failed");
+          setProcessingLog((prev) => [
+            ...prev,
+            "⏰ Processing timeout - job may still be running",
+            "Try refreshing the page in a few minutes",
+          ]);
+        }
+      } catch (err) {
+        console.error("Status polling error:", err);
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000);
+        } else {
+          setJobStatus("failed");
+          setProcessingLog((prev) => [
+            ...prev,
+            "❌ Failed to check job status",
+          ]);
+        }
+      }
+    };
+
+    poll();
+  };
 
   useEffect(() => {
     loadFiles();
@@ -739,22 +854,44 @@ function Dashboard({ user, logout }) {
                     </SelectedFileInfo>
 
                     <ProcessDescription>
-                      This will analyze your file and generate instructions to
-                      delete rows where columns F, G, H, and I are all empty or
-                      zero, while preserving all images and formatting via
-                      LibreOffice Calc.
+                      Choose your processing method:
                     </ProcessDescription>
 
+                    {/* Manual Processing Button */}
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       onClick={handleProcessFile}
-                      disabled={processing}
+                      disabled={processing || jobStatus === "processing"}
                       style={{ width: "100%", marginTop: "1rem" }}
                     >
                       {processing
                         ? "Analyzing..."
-                        : "Analyze & Generate Instructions"}
+                        : "📋 Generate Instructions & Macro"}
                     </Button>
+
+                    {/* Automated Processing Button */}
+                    <Button
+                      variant="primary"
+                      onClick={handleAutomatedProcessing}
+                      disabled={processing || jobStatus === "processing"}
+                      style={{ width: "100%", marginTop: "0.5rem" }}
+                    >
+                      {jobStatus === "processing"
+                        ? "🔄 Processing on GitHub..."
+                        : "⚡ Automated Processing"}
+                    </Button>
+
+                    <div
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "#6b7280",
+                        marginTop: "0.5rem",
+                        textAlign: "center",
+                      }}
+                    >
+                      Automated processing preserves all images, charts, and
+                      formatting
+                    </div>
                   </ProcessingSection>
                 ) : (
                   <EmptyState>
@@ -781,135 +918,188 @@ function Dashboard({ user, logout }) {
                     ))}
                   </ProcessingLog>
 
-                  {/* Show results when analysis finds rows to delete */}
-                  {processedFile && processedFile.hasRowsToDelete && (
+                  {processedFile && processedFile.isAutomated && (
                     <DownloadSection>
-                      <h4>Analysis Complete - Download Instructions</h4>
-                      <p>Found {processedFile.totalRows} rows to delete</p>
-                      <p>
-                        Sheets affected:{" "}
-                        {processedFile.sheetsAffected?.join(", ")}
-                      </p>
-                      <p>Choose your preferred processing method:</p>
+                      <h4>🎉 Automated Processing Complete!</h4>
+                      <p>Your file has been processed on GitHub Actions</p>
 
-                      <div
-                        style={{
-                          display: "grid",
-                          gap: "1rem",
-                          marginTop: "1rem",
-                        }}
+                      <Button
+                        variant="primary"
+                        onClick={() =>
+                          handleDownload(
+                            processedFile.downloadFileId,
+                            processedFile.downloadFilename
+                          )
+                        }
+                        style={{ width: "100%", marginTop: "1rem" }}
                       >
-                        {/* LibreOffice Macro */}
-                        <div
-                          style={{
-                            padding: "1rem",
-                            background: "rgba(99, 102, 241, 0.1)",
-                            borderRadius: "8px",
-                            border: "1px solid rgba(99, 102, 241, 0.3)",
-                          }}
-                        >
-                          <h5
-                            style={{ color: "#6366f1", marginBottom: "0.5rem" }}
-                          >
-                            🤖 LibreOffice Macro (Recommended)
-                          </h5>
-                          <p
-                            style={{
-                              fontSize: "0.875rem",
-                              marginBottom: "1rem",
-                              color: "#9ca3af",
-                            }}
-                          >
-                            Automated deletion while preserving all formatting
-                            and images
-                          </p>
-                          <Button
-                            variant="primary"
-                            onClick={() => {
-                              console.log(
-                                "Downloading macro:",
-                                processedFile.downloads?.macro
-                              );
-                              handleDownload(
-                                processedFile.downloads?.macro?.file_id,
-                                processedFile.downloads?.macro?.filename
-                              );
-                            }}
-                            style={{ width: "100%" }}
-                          >
-                            Download Macro (.bas)
-                          </Button>
-                        </div>
+                        📥 Download Processed File
+                      </Button>
 
-                        {/* Manual Instructions */}
-                        <div
-                          style={{
-                            padding: "1rem",
-                            background: "rgba(139, 92, 246, 0.1)",
-                            borderRadius: "8px",
-                            border: "1px solid rgba(139, 92, 246, 0.3)",
-                          }}
-                        >
-                          <h5
-                            style={{ color: "#8b5cf6", marginBottom: "0.5rem" }}
-                          >
-                            📋 Manual Instructions
-                          </h5>
-                          <p
-                            style={{
-                              fontSize: "0.875rem",
-                              marginBottom: "1rem",
-                              color: "#9ca3af",
-                            }}
-                          >
-                            Step-by-step deletion guide with detailed
-                            instructions
-                          </p>
-                          <Button
-                            variant="secondary"
-                            onClick={() => {
-                              console.log(
-                                "Downloading instructions:",
-                                processedFile.downloads?.instructions
-                              );
-                              handleDownload(
-                                processedFile.downloads?.instructions?.file_id,
-                                processedFile.downloads?.instructions?.filename
-                              );
-                            }}
-                            style={{ width: "100%" }}
-                          >
-                            Download Instructions (.txt)
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Next Steps */}
                       <div
                         style={{
                           marginTop: "1rem",
                           padding: "1rem",
                           background: "rgba(16, 185, 129, 0.1)",
                           borderRadius: "8px",
-                          border: "1px solid rgba(16, 185, 129, 0.3)",
                           fontSize: "0.875rem",
+                          textAlign: "center",
                         }}
                       >
-                        <h5
-                          style={{ color: "#10b981", marginBottom: "0.5rem" }}
+                        ✅ All images, charts, and formatting preserved
+                        <br />
+                        🤖 Processed automatically on secure GitHub
+                        infrastructure
+                      </div>
+                    </DownloadSection>
+                  )}
+
+                  {/* Manual Processing Results */}
+                  {processedFile &&
+                    processedFile.hasRowsToDelete &&
+                    !processedFile.isAutomated && (
+                      <DownloadSection>
+                        <h4>Analysis Complete - Download Instructions</h4>
+                        <p>Found {processedFile.totalRows} rows to delete</p>
+                        <p>
+                          Sheets affected:{" "}
+                          {processedFile.sheetsAffected?.join(", ")}
+                        </p>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: "1rem",
+                            marginTop: "1rem",
+                          }}
                         >
-                          📋 Next Steps:
-                        </h5>
-                        <div style={{ color: "#6b7280", lineHeight: "1.5" }}>
-                          1. Download the LibreOffice macro or manual
-                          instructions
-                          <br />
-                          2. Open your Excel file in LibreOffice Calc
-                          <br />
-                          3. Apply the changes using your chosen method
-                          <br />
-                          4. Save your cleaned file
+                          {/* LibreOffice Macro */}
+                          <div
+                            style={{
+                              padding: "1rem",
+                              background: "rgba(99, 102, 241, 0.1)",
+                              borderRadius: "8px",
+                              border: "1px solid rgba(99, 102, 241, 0.3)",
+                            }}
+                          >
+                            <h5
+                              style={{
+                                color: "#6366f1",
+                                marginBottom: "0.5rem",
+                              }}
+                            >
+                              LibreOffice Macro (Recommended)
+                            </h5>
+                            <p
+                              style={{
+                                fontSize: "0.875rem",
+                                marginBottom: "1rem",
+                                color: "#9ca3af",
+                              }}
+                            >
+                              Automated deletion while preserving all formatting
+                              and images
+                            </p>
+                            <Button
+                              variant="primary"
+                              onClick={() => {
+                                console.log(
+                                  "Downloading macro:",
+                                  processedFile.downloads?.macro
+                                );
+                                handleDownload(
+                                  processedFile.downloads?.macro?.file_id,
+                                  processedFile.downloads?.macro?.filename
+                                );
+                              }}
+                              style={{ width: "100%" }}
+                            >
+                              Download Macro (.bas)
+                            </Button>
+                          </div>
+
+                          {/* Instructions */}
+                          <div
+                            style={{
+                              padding: "1rem",
+                              background: "rgba(139, 92, 246, 0.1)",
+                              borderRadius: "8px",
+                              border: "1px solid rgba(139, 92, 246, 0.3)",
+                            }}
+                          >
+                            <h5
+                              style={{
+                                color: "#8b5cf6",
+                                marginBottom: "0.5rem",
+                              }}
+                            >
+                              Manual Instructions
+                            </h5>
+                            <p
+                              style={{
+                                fontSize: "0.875rem",
+                                marginBottom: "1rem",
+                                color: "#9ca3af",
+                              }}
+                            >
+                              Step-by-step deletion guide with detailed
+                              instructions
+                            </p>
+                            <Button
+                              variant="secondary"
+                              onClick={() => {
+                                console.log(
+                                  "Downloading instructions:",
+                                  processedFile.downloads?.instructions
+                                );
+                                handleDownload(
+                                  processedFile.downloads?.instructions
+                                    ?.file_id,
+                                  processedFile.downloads?.instructions
+                                    ?.filename
+                                );
+                              }}
+                              style={{ width: "100%" }}
+                            >
+                              Download Instructions (.txt)
+                            </Button>
+                          </div>
                         </div>
+                      </DownloadSection>
+                    )}
+
+                  {/* Automated Processing Results */}
+                  {processedFile && processedFile.isAutomated && (
+                    <DownloadSection>
+                      <h4>Automated Processing Complete!</h4>
+                      <p>Your file has been processed on GitHub Actions</p>
+
+                      <Button
+                        variant="primary"
+                        onClick={() =>
+                          handleDownload(
+                            processedFile.downloadFileId,
+                            processedFile.downloadFilename
+                          )
+                        }
+                        style={{ width: "100%", marginTop: "1rem" }}
+                      >
+                        Download Processed File
+                      </Button>
+
+                      <div
+                        style={{
+                          marginTop: "1rem",
+                          padding: "1rem",
+                          background: "rgba(16, 185, 129, 0.1)",
+                          borderRadius: "8px",
+                          fontSize: "0.875rem",
+                          textAlign: "center",
+                        }}
+                      >
+                        All images, charts, and formatting preserved
+                        <br />
+                        Processed automatically on secure GitHub infrastructure
                       </div>
                     </DownloadSection>
                   )}
