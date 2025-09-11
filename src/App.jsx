@@ -20,6 +20,58 @@ import {
   CenterText,
 } from "./styled/AuthComponents";
 
+// Import dashboard components
+import {
+  DashboardHeader,
+  HeaderContent,
+  DashboardTitle,
+  UserInfo,
+  UserEmail,
+  MainContent,
+  DashboardGrid,
+  LeftColumn,
+  RightColumn,
+} from "./styled/DashboardComponents";
+
+import {
+  ContentCard,
+  CardHeader,
+  CardTitle,
+  CardSubtitle,
+  CardBody,
+  EmptyState,
+} from "./styled/CardComponents";
+
+import {
+  FileList,
+  FileItem,
+  FileInfo,
+  FileIcon,
+  FileDetails,
+  FileMeta,
+  FileName,
+  Badge,
+} from "./styled/FileComponents";
+
+import {
+  FileInput,
+  ProgressContainer,
+  ProgressBar,
+  ProgressFill,
+  ProgressText,
+} from "./styled/UploadComponents";
+
+import {
+  ProcessingSection,
+  SelectedFileInfo,
+  ProcessDescription,
+  ProcessingLog,
+  LogEntry,
+  DownloadSection,
+  DownloadGrid,
+  DownloadCard,
+} from "./styled/ProcessingComponents";
+
 // Global styles
 const GlobalStyle = createGlobalStyle`
   * {
@@ -29,11 +81,11 @@ const GlobalStyle = createGlobalStyle`
   }
 
   html, body, #root {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
 
   body {
     background: ${(props) => props.theme.colors.background.primary};
@@ -62,413 +114,6 @@ const GlobalStyle = createGlobalStyle`
 
 // API Configuration
 const API_BASE = "http://127.0.0.1:5000/api";
-
-// Dashboard Components
-const DashboardHeader = styled.header`
-  background: ${(props) => props.theme.colors.background.card};
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid ${(props) => props.theme.colors.border.primary};
-  padding: ${(props) => props.theme.spacing.lg} 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-`;
-
-const HeaderContent = styled.div`
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 ${(props) => props.theme.spacing.md};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  @media (max-width: 640px) {
-    flex-direction: column;
-    gap: ${(props) => props.theme.spacing.md};
-  }
-`;
-
-const DashboardTitle = styled.h1`
-  font-size: 1.75rem;
-  font-weight: 800;
-  background: ${(props) => props.theme.colors.gradient.accent};
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-`;
-
-const UserInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${(props) => props.theme.spacing.md};
-`;
-
-const UserEmail = styled.span`
-  color: ${(props) => props.theme.colors.text.secondary};
-  font-size: 0.875rem;
-  font-weight: 500;
-`;
-
-const MainContent = styled.main`
-  max-width: 90%;
-  margin: 0 auto;
-  padding: ${(props) => props.theme.spacing.xl};
-  min-height: calc(100vh - 120px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-`;
-
-const ContentCard = styled.div`
-  background: ${(props) => props.theme.colors.gradient.card};
-  border-radius: ${(props) => props.theme.borderRadius.xl};
-  box-shadow: ${(props) => props.theme.shadows.lg};
-  overflow: hidden;
-  margin-bottom: ${(props) => props.theme.spacing.xl};
-  border: 1px solid ${(props) => props.theme.colors.border.primary};
-  backdrop-filter: blur(10px);
-  width: 100%;
-  max-width: 40vw;
-  margin-left: auto;
-  margin-right: auto;
-`;
-
-const CardHeader = styled.div`
-  padding: ${(props) => props.theme.spacing.xl};
-  border-bottom: 1px solid ${(props) => props.theme.colors.border.primary};
-  background: rgba(255, 255, 255, 0.02);
-`;
-
-const CardTitle = styled.h3`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: ${(props) => props.theme.colors.text.primary};
-  margin-bottom: ${(props) => props.theme.spacing.sm};
-`;
-
-const CardSubtitle = styled.p`
-  color: ${(props) => props.theme.colors.text.secondary};
-  font-size: 0.95rem;
-`;
-
-const CardBody = styled.div`
-  padding: ${(props) => props.theme.spacing.xl};
-`;
-
-const FileInput = styled.input`
-  width: 100%;
-  padding: ${(props) => props.theme.spacing.xl};
-  border: 2px dashed ${(props) => props.theme.colors.border.secondary};
-  border-radius: ${(props) => props.theme.borderRadius.lg};
-  background: ${(props) => props.theme.colors.background.secondary};
-  color: ${(props) => props.theme.colors.text.secondary};
-  cursor: pointer;
-  transition: ${(props) => props.theme.transitions.normal};
-  font-size: 1rem;
-  text-align: center;
-
-  &:hover:not(:disabled) {
-    border-color: ${(props) => props.theme.colors.accent.primary};
-    background: ${(props) => props.theme.colors.background.tertiary};
-    color: ${(props) => props.theme.colors.text.primary};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  &::file-selector-button {
-    background: ${(props) => props.theme.colors.gradient.button};
-    color: ${(props) => props.theme.colors.text.primary};
-    border: none;
-    padding: ${(props) => props.theme.spacing.sm}
-      ${(props) => props.theme.spacing.md};
-    border-radius: ${(props) => props.theme.borderRadius.md};
-    margin-right: ${(props) => props.theme.spacing.md};
-    cursor: pointer;
-    font-weight: 600;
-    transition: ${(props) => props.theme.transitions.normal};
-  }
-
-  &::file-selector-button:hover {
-    transform: translateY(-1px);
-  }
-`;
-
-const ProgressContainer = styled.div`
-  margin-top: ${(props) => props.theme.spacing.lg};
-`;
-
-const ProgressBar = styled.div`
-  width: 100%;
-  height: 12px;
-  background: ${(props) => props.theme.colors.background.secondary};
-  border-radius: ${(props) => props.theme.borderRadius.full};
-  overflow: hidden;
-  position: relative;
-  box-shadow: ${(props) => props.theme.shadows.inner};
-`;
-
-const ProgressFill = styled.div`
-  height: 100%;
-  background: ${(props) => props.theme.colors.gradient.button};
-  transition: width 0.3s ease;
-  border-radius: ${(props) => props.theme.borderRadius.full};
-  width: ${(props) => props.progress}%;
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent
-    );
-    animation: shimmer 2s infinite;
-  }
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-`;
-
-const ProgressText = styled.p`
-  margin-top: ${(props) => props.theme.spacing.sm};
-  font-size: 0.875rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-  text-align: center;
-  font-weight: 500;
-`;
-
-const FileList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(props) => props.theme.spacing.md};
-`;
-
-const FileItem = styled.div`
-  padding: ${(props) => props.theme.spacing.lg};
-  background: ${(props) =>
-    props.selected
-      ? props.theme.colors.background.tertiary
-      : props.theme.colors.background.secondary};
-  border-radius: ${(props) => props.theme.borderRadius.lg};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 2px solid
-    ${(props) =>
-      props.selected
-        ? props.theme.colors.accent.primary
-        : props.theme.colors.border.primary};
-  transition: ${(props) => props.theme.transitions.normal};
-  cursor: pointer;
-
-  &:hover {
-    background: ${(props) => props.theme.colors.background.tertiary};
-    border-color: ${(props) =>
-      props.selected
-        ? props.theme.colors.accent.primary
-        : props.theme.colors.border.secondary};
-    transform: translateY(-2px);
-    box-shadow: ${(props) => props.theme.shadows.md};
-  }
-
-  @media (max-width: 640px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: ${(props) => props.theme.spacing.md};
-  }
-`;
-
-const FileInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${(props) => props.theme.spacing.md};
-`;
-
-const FileIcon = styled.div`
-  width: 48px;
-  height: 48px;
-  background: ${(props) => props.theme.colors.gradient.button};
-  border-radius: ${(props) => props.theme.borderRadius.lg};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: ${(props) => props.theme.colors.text.primary};
-  font-weight: 700;
-  font-size: 0.75rem;
-  box-shadow: ${(props) => props.theme.shadows.md};
-`;
-
-const FileDetails = styled.div`
-  h4 {
-    font-weight: 600;
-    color: ${(props) => props.theme.colors.text.primary};
-    margin-bottom: ${(props) => props.theme.spacing.xs};
-    font-size: 1.1rem;
-  }
-`;
-
-const FileMeta = styled.p`
-  font-size: 0.875rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-  margin: 0;
-`;
-
-export const FileName = styled.div`
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text.primary};
-  margin-bottom: ${(p) => p.theme.spacing.xs};
-  font-size: 1.1rem;
-
-  max-width: 300px; /* adjust cutoff width */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  display: inline-block;
-  vertical-align: middle;
-  position: relative;
-
-  &:hover::after {
-    content: attr(title);
-    position: absolute;
-    left: 0;
-    top: 100%;
-    background: ${(p) => p.theme.colors.background.card};
-    color: ${(p) => p.theme.colors.text.primary};
-    padding: 6px 10px;
-    border-radius: ${(p) => p.theme.borderRadius.sm};
-    white-space: normal;
-    max-width: 400px;
-    z-index: 10;
-    box-shadow: ${(p) => p.theme.shadows.md};
-  }
-`;
-
-const Badge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: ${(props) => props.theme.spacing.sm}
-    ${(props) => props.theme.spacing.md};
-  border-radius: ${(props) => props.theme.borderRadius.full};
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: ${(props) => props.theme.colors.accent.success}22;
-  color: ${(props) => props.theme.colors.accent.success};
-  border: 1px solid ${(props) => props.theme.colors.accent.success}44;
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: ${(props) => props.theme.spacing.xxl};
-  color: ${(props) => props.theme.colors.text.tertiary};
-
-  .icon {
-    font-size: 3rem;
-    margin-bottom: ${(props) => props.theme.spacing.md};
-    opacity: 0.5;
-  }
-`;
-
-const DashboardGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: ${(props) => props.theme.spacing.xl};
-  width: 100%;
-  max-width: 1400px;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const LeftColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(props) => props.theme.spacing.xl};
-`;
-
-const RightColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(props) => props.theme.spacing.xl};
-`;
-
-const ProcessingSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(props) => props.theme.spacing.md};
-`;
-
-const SelectedFileInfo = styled.div`
-  padding: ${(props) => props.theme.spacing.md};
-  background: ${(props) => props.theme.colors.background.secondary};
-  border-radius: ${(props) => props.theme.borderRadius.md};
-  border: 1px solid ${(props) => props.theme.colors.border.primary};
-`;
-
-const ProcessDescription = styled.p`
-  color: ${(props) => props.theme.colors.text.secondary};
-  font-size: 0.875rem;
-  line-height: 1.5;
-`;
-
-const ProcessingLog = styled.div`
-  background: ${(props) => props.theme.colors.background.secondary};
-  border-radius: ${(props) => props.theme.borderRadius.md};
-  padding: ${(props) => props.theme.spacing.md};
-  max-height: 200px;
-  overflow-y: auto;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-  font-size: 0.875rem;
-`;
-
-const LogEntry = styled.div`
-  padding: ${(props) => props.theme.spacing.xs} 0;
-  color: ${(props) =>
-    props.error
-      ? props.theme.colors.accent.error
-      : props.theme.colors.text.secondary};
-  border-bottom: 1px solid ${(props) => props.theme.colors.border.primary};
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const DownloadSection = styled.div`
-  margin-top: ${(props) => props.theme.spacing.lg};
-  padding: ${(props) => props.theme.spacing.md};
-  background: ${(props) => props.theme.colors.background.secondary};
-  border-radius: ${(props) => props.theme.borderRadius.md};
-  border: 1px solid ${(props) => props.theme.colors.accent.success}44;
-
-  h4 {
-    color: ${(props) => props.theme.colors.accent.success};
-    margin-bottom: ${(props) => props.theme.spacing.sm};
-  }
-
-  p {
-    color: ${(props) => props.theme.colors.text.secondary};
-    margin: ${(props) => props.theme.spacing.xs} 0;
-  }
-`;
 
 function App() {
   const [user, setUser] = useState(null);
@@ -540,17 +185,11 @@ function AuthPage({ setUser }) {
 
     try {
       const endpoint = isLogin ? "login" : "register";
-      console.log(`Attempting ${endpoint} with:`, {
-        email,
-        endpoint: `${API_BASE}/${endpoint}`,
-      });
-
       const response = await axios.post(`${API_BASE}/${endpoint}`, {
         email,
         password,
       });
 
-      console.log("Auth response:", response.data);
       const { access_token } = response.data;
       localStorage.setItem("token", access_token);
 
@@ -558,7 +197,6 @@ function AuthPage({ setUser }) {
         headers: { Authorization: `Bearer ${access_token}` },
       });
 
-      console.log("Profile response:", profileResponse.data);
       setUser(profileResponse.data);
     } catch (err) {
       console.error("Auth error:", err);
@@ -630,6 +268,7 @@ function AuthPage({ setUser }) {
 
 function Dashboard({ user, logout }) {
   const [files, setFiles] = useState([]);
+  const [processedFiles, setProcessedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -639,6 +278,7 @@ function Dashboard({ user, logout }) {
 
   useEffect(() => {
     loadFiles();
+    loadProcessedFiles();
   }, []);
 
   const loadFiles = async () => {
@@ -650,6 +290,18 @@ function Dashboard({ user, logout }) {
       setFiles(response.data.files);
     } catch (err) {
       console.error("Error loading files:", err);
+    }
+  };
+
+  const loadProcessedFiles = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE}/processed-files`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProcessedFiles(response.data.processed_files);
+    } catch (err) {
+      console.error("Error loading processed files:", err);
     }
   };
 
@@ -670,7 +322,7 @@ function Dashboard({ user, logout }) {
       formData.append("file", file);
 
       const token = localStorage.getItem("token");
-      await axios.post(`${API_BASE}/upload`, formData, {
+      const response = await axios.post(`${API_BASE}/upload`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -684,7 +336,21 @@ function Dashboard({ user, logout }) {
         },
       });
 
-      alert("File uploaded successfully!");
+      const result = response.data;
+
+      if (result.duplicate) {
+        alert(
+          `File "${result.filename}" already exists. Selecting existing file.`
+        );
+        // Find and select the existing file
+        const existingFile = files.find((f) => f.id === result.file_id);
+        if (existingFile) {
+          setSelectedFile(existingFile);
+        }
+      } else {
+        alert("File uploaded successfully!");
+      }
+
       loadFiles();
       e.target.value = "";
     } catch (err) {
@@ -696,11 +362,51 @@ function Dashboard({ user, logout }) {
     }
   };
 
+  // Add cleanup function
+  const cleanupMissingFiles = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_BASE}/cleanup-files`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      alert(`Cleaned up ${response.data.removed_count} missing files`);
+      loadFiles(); // Refresh the list
+    } catch (err) {
+      console.error("Cleanup error:", err);
+      alert(
+        "Cleanup failed: " + (err.response?.data?.error || "Unknown error")
+      );
+    }
+  };
+
+  // Add debug function to see storage organization
+  const debugStorage = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE}/debug/storage`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("=== STORAGE DEBUG ===");
+      console.log("Database files:", response.data.database_files);
+      console.log("Upload folder:", response.data.storage_folders.uploads);
+      console.log("Processed folder:", response.data.storage_folders.processed);
+      console.log("Macros folder:", response.data.storage_folders.macros);
+    } catch (err) {
+      console.error("Debug error:", err);
+    }
+  };
+
   const handleProcessFile = async () => {
     if (!selectedFile) return;
 
     setProcessing(true);
-    setProcessingLog(["Starting file processing..."]);
+    setProcessingLog(["Starting file analysis..."]);
     setProcessedFile(null);
 
     try {
@@ -710,29 +416,43 @@ function Dashboard({ user, logout }) {
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 600000, // 10 minutes for processing
+          timeout: 300000, // 5 minutes for analysis
         }
       );
 
       const result = response.data;
+      console.log("Analysis result:", result);
+
+      if (result.total_rows_to_delete === 0) {
+        setProcessingLog([
+          "Analysis completed!",
+          "No rows found that need deletion.",
+          "Your file doesn't have any rows where columns F, G, H, and I are all empty/zero.",
+        ]);
+        return;
+      }
+
       setProcessingLog([
-        "Processing completed successfully!",
-        `Deleted ${result.deleted_rows} empty rows`,
+        "Analysis completed successfully!",
+        `Found ${result.total_rows_to_delete} rows to delete`,
+        `Sheets affected: ${result.sheets_affected.join(", ")}`,
         ...result.processing_log,
       ]);
 
+      // Set download options
       setProcessedFile({
-        id: result.processed_file_id,
-        filename: result.download_filename,
-        deletedRows: result.deleted_rows,
+        hasRowsToDelete: true,
+        totalRows: result.total_rows_to_delete,
+        sheetsAffected: result.sheets_affected,
+        downloads: result.downloads,
       });
 
       // Refresh file list
       loadFiles();
     } catch (err) {
-      console.error("Processing error:", err);
+      console.error("Analysis error:", err);
       setProcessingLog([
-        "Processing failed!",
+        "Analysis failed!",
         err.response?.data?.error || "Unknown error occurred",
       ]);
     } finally {
@@ -740,28 +460,143 @@ function Dashboard({ user, logout }) {
     }
   };
 
+  // Update your download section JSX:
+  {
+    processedFile && (
+      <DownloadSection>
+        <h4>Analysis Results</h4>
+        <p>Found {processedFile.totalRows} rows to delete</p>
+        <p>Sheets affected: {processedFile.sheetsAffected?.join(", ")}</p>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "1rem",
+            marginTop: "1rem",
+          }}
+        >
+          {/* LibreOffice Macro Option */}
+          <div
+            style={{
+              padding: "1rem",
+              background: "rgba(99, 102, 241, 0.1)",
+              borderRadius: "8px",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+            }}
+          >
+            <h5 style={{ color: "#6366f1", marginBottom: "0.5rem" }}>
+              🖥️ LibreOffice Macro
+            </h5>
+            <p style={{ fontSize: "0.875rem", marginBottom: "1rem" }}>
+              Automated deletion - recommended for most users
+            </p>
+            <Button
+              variant="primary"
+              onClick={() =>
+                handleDownload(
+                  processedFile.downloads.macro.file_id,
+                  processedFile.downloads.macro.filename
+                )
+              }
+            >
+              Download Macro
+            </Button>
+          </div>
+
+          {/* Manual Instructions Option */}
+          <div
+            style={{
+              padding: "1rem",
+              background: "rgba(139, 92, 246, 0.1)",
+              borderRadius: "8px",
+              border: "1px solid rgba(139, 92, 246, 0.3)",
+            }}
+          >
+            <h5 style={{ color: "#8b5cf6", marginBottom: "0.5rem" }}>
+              📋 Manual Instructions
+            </h5>
+            <p style={{ fontSize: "0.875rem", marginBottom: "1rem" }}>
+              Step-by-step deletion guide
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                handleDownload(
+                  processedFile.downloads.instructions.file_id,
+                  processedFile.downloads.instructions.filename
+                )
+              }
+            >
+              Download Guide
+            </Button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: "1rem",
+            padding: "1rem",
+            background: "rgba(16, 185, 129, 0.1)",
+            borderRadius: "8px",
+            border: "1px solid rgba(16, 185, 129, 0.3)",
+          }}
+        >
+          <h5 style={{ color: "#10b981", marginBottom: "0.5rem" }}>
+            📊 Full Analysis
+          </h5>
+          <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+            View detailed row-by-row analysis and create custom processing rules
+          </p>
+          <Button variant="ghost" disabled style={{ marginTop: "0.5rem" }}>
+            Coming Soon
+          </Button>
+        </div>
+      </DownloadSection>
+    );
+  }
+
+  // Replace your handleDownload function with this debug version:
+
   const handleDownload = async (fileId, filename) => {
+    console.log("=== DOWNLOAD DEBUG ===");
+    console.log("File ID:", fileId);
+    console.log("Filename:", filename);
+    console.log("API_BASE:", API_BASE);
+
+    const token = localStorage.getItem("token");
+    console.log("Token exists:", !!token);
+
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE}/download/${fileId}`, {
+      const url = `${API_BASE}/download/${fileId}`;
+      console.log("Download URL:", url);
+
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob",
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+      console.log("Blob size:", response.data.size);
+
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
-      link.href = url;
+      link.href = downloadUrl;
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      console.log("Download initiated successfully");
     } catch (err) {
-      console.error("Download error:", err);
-      alert(
-        "Download failed: " + (err.response?.data?.error || "Unknown error")
-      );
+      console.error("=== DOWNLOAD ERROR ===");
+      console.error("Error:", err);
+      console.error("Response data:", err.response?.data);
+      console.error("Response status:", err.response?.status);
+      alert("Download failed: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -772,8 +607,6 @@ function Dashboard({ user, logout }) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
-
-  const unprocessedFiles = files; // Show all files, not just unprocessed
 
   return (
     <>
@@ -791,7 +624,6 @@ function Dashboard({ user, logout }) {
 
       <MainContent>
         <DashboardGrid>
-          {/* Left Column - Upload */}
           <LeftColumn>
             <ContentCard>
               <CardHeader>
@@ -823,8 +655,23 @@ function Dashboard({ user, logout }) {
               <CardHeader>
                 <CardTitle>Your Files</CardTitle>
                 <CardSubtitle>
-                  Select any file to process (reprocessing allowed)
+                  Select a file to analyze for row deletion
                 </CardSubtitle>
+                {/* Add debug buttons for development */}
+                <div
+                  style={{
+                    marginTop: "0.5rem",
+                    display: "flex",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <Button variant="ghost" small onClick={cleanupMissingFiles}>
+                    🧹 Cleanup
+                  </Button>
+                  <Button variant="ghost" small onClick={debugStorage}>
+                    🔍 Debug
+                  </Button>
+                </div>
               </CardHeader>
 
               {files.length === 0 ? (
@@ -851,7 +698,7 @@ function Dashboard({ user, logout }) {
                             <FileMeta>
                               {formatFileSize(file.file_size)} • Uploaded{" "}
                               {new Date(file.upload_date).toLocaleDateString()}
-                              {file.processed && " • Previously processed"}
+                              {file.processed && " • Analyzed"}
                             </FileMeta>
                           </FileDetails>
                         </FileInfo>
@@ -863,7 +710,7 @@ function Dashboard({ user, logout }) {
                           )}
                           {file.processed && selectedFile?.id !== file.id && (
                             <Badge style={{ backgroundColor: "#10b981" }}>
-                              Processed
+                              Analyzed
                             </Badge>
                           )}
                         </div>
@@ -875,13 +722,12 @@ function Dashboard({ user, logout }) {
             </ContentCard>
           </LeftColumn>
 
-          {/* Right Column - Processing */}
           <RightColumn>
             <ContentCard>
               <CardHeader>
-                <CardTitle>Process File</CardTitle>
+                <CardTitle>Analyze File</CardTitle>
                 <CardSubtitle>
-                  Remove rows with empty columns F, G, H, I
+                  Find rows where columns F, G, H, I are all empty/zero
                 </CardSubtitle>
               </CardHeader>
               <CardBody>
@@ -893,9 +739,10 @@ function Dashboard({ user, logout }) {
                     </SelectedFileInfo>
 
                     <ProcessDescription>
-                      This will delete any rows where columns F, G, H, and I are
-                      all empty or zero, while preserving all images and other
-                      formatting.
+                      This will analyze your file and generate instructions to
+                      delete rows where columns F, G, H, and I are all empty or
+                      zero, while preserving all images and formatting via
+                      LibreOffice Calc.
                     </ProcessDescription>
 
                     <Button
@@ -904,12 +751,14 @@ function Dashboard({ user, logout }) {
                       disabled={processing}
                       style={{ width: "100%", marginTop: "1rem" }}
                     >
-                      {processing ? "Processing..." : "Process File"}
+                      {processing
+                        ? "Analyzing..."
+                        : "Analyze & Generate Instructions"}
                     </Button>
                   </ProcessingSection>
                 ) : (
                   <EmptyState>
-                    <p>Select a file from the left to start processing</p>
+                    <p>Select a file from the left to start analysis</p>
                   </EmptyState>
                 )}
               </CardBody>
@@ -918,7 +767,7 @@ function Dashboard({ user, logout }) {
             {(processingLog.length > 0 || processedFile) && (
               <ContentCard>
                 <CardHeader>
-                  <CardTitle>Processing Results</CardTitle>
+                  <CardTitle>Analysis Results</CardTitle>
                 </CardHeader>
                 <CardBody>
                   <ProcessingLog>
@@ -932,24 +781,156 @@ function Dashboard({ user, logout }) {
                     ))}
                   </ProcessingLog>
 
-                  {processedFile && (
+                  {/* Show results when analysis finds rows to delete */}
+                  {processedFile && processedFile.hasRowsToDelete && (
                     <DownloadSection>
-                      <h4>File Ready for Download</h4>
-                      <p>{processedFile.filename}</p>
-                      <p>Removed {processedFile.deletedRows} empty rows</p>
-                      <Button
-                        variant="primary"
-                        onClick={() =>
-                          handleDownload(
-                            processedFile.id,
-                            processedFile.filename
-                          )
-                        }
-                        style={{ marginTop: "1rem" }}
+                      <h4>Analysis Complete - Download Instructions</h4>
+                      <p>Found {processedFile.totalRows} rows to delete</p>
+                      <p>
+                        Sheets affected:{" "}
+                        {processedFile.sheetsAffected?.join(", ")}
+                      </p>
+                      <p>Choose your preferred processing method:</p>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: "1rem",
+                          marginTop: "1rem",
+                        }}
                       >
-                        Download Processed File
-                      </Button>
+                        {/* LibreOffice Macro */}
+                        <div
+                          style={{
+                            padding: "1rem",
+                            background: "rgba(99, 102, 241, 0.1)",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(99, 102, 241, 0.3)",
+                          }}
+                        >
+                          <h5
+                            style={{ color: "#6366f1", marginBottom: "0.5rem" }}
+                          >
+                            🤖 LibreOffice Macro (Recommended)
+                          </h5>
+                          <p
+                            style={{
+                              fontSize: "0.875rem",
+                              marginBottom: "1rem",
+                              color: "#9ca3af",
+                            }}
+                          >
+                            Automated deletion while preserving all formatting
+                            and images
+                          </p>
+                          <Button
+                            variant="primary"
+                            onClick={() => {
+                              console.log(
+                                "Downloading macro:",
+                                processedFile.downloads?.macro
+                              );
+                              handleDownload(
+                                processedFile.downloads?.macro?.file_id,
+                                processedFile.downloads?.macro?.filename
+                              );
+                            }}
+                            style={{ width: "100%" }}
+                          >
+                            Download Macro (.bas)
+                          </Button>
+                        </div>
+
+                        {/* Manual Instructions */}
+                        <div
+                          style={{
+                            padding: "1rem",
+                            background: "rgba(139, 92, 246, 0.1)",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(139, 92, 246, 0.3)",
+                          }}
+                        >
+                          <h5
+                            style={{ color: "#8b5cf6", marginBottom: "0.5rem" }}
+                          >
+                            📋 Manual Instructions
+                          </h5>
+                          <p
+                            style={{
+                              fontSize: "0.875rem",
+                              marginBottom: "1rem",
+                              color: "#9ca3af",
+                            }}
+                          >
+                            Step-by-step deletion guide with detailed
+                            instructions
+                          </p>
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              console.log(
+                                "Downloading instructions:",
+                                processedFile.downloads?.instructions
+                              );
+                              handleDownload(
+                                processedFile.downloads?.instructions?.file_id,
+                                processedFile.downloads?.instructions?.filename
+                              );
+                            }}
+                            style={{ width: "100%" }}
+                          >
+                            Download Instructions (.txt)
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Next Steps */}
+                      <div
+                        style={{
+                          marginTop: "1rem",
+                          padding: "1rem",
+                          background: "rgba(16, 185, 129, 0.1)",
+                          borderRadius: "8px",
+                          border: "1px solid rgba(16, 185, 129, 0.3)",
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        <h5
+                          style={{ color: "#10b981", marginBottom: "0.5rem" }}
+                        >
+                          📋 Next Steps:
+                        </h5>
+                        <div style={{ color: "#6b7280", lineHeight: "1.5" }}>
+                          1. Download the LibreOffice macro or manual
+                          instructions
+                          <br />
+                          2. Open your Excel file in LibreOffice Calc
+                          <br />
+                          3. Apply the changes using your chosen method
+                          <br />
+                          4. Save your cleaned file
+                        </div>
+                      </div>
                     </DownloadSection>
+                  )}
+
+                  {/* Show when no rows need deletion */}
+                  {processedFile && !processedFile.hasRowsToDelete && (
+                    <div
+                      style={{
+                        padding: "1rem",
+                        background: "rgba(16, 185, 129, 0.1)",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(16, 185, 129, 0.3)",
+                        textAlign: "center",
+                      }}
+                    >
+                      <h4 style={{ color: "#10b981" }}>✅ File is Clean!</h4>
+                      <p style={{ color: "#6b7280" }}>
+                        No rows found that need deletion. Your file is already
+                        optimized.
+                      </p>
+                    </div>
                   )}
                 </CardBody>
               </ContentCard>
