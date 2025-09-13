@@ -63,7 +63,7 @@ jobs:
           # Use rsync to upload built files
           rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
             --delete \
-            ./dist/ ${{ secrets.USERNAME }}@${{ secrets.HOST }}:${{ secrets.DEPLOY_PATH }}/ui/xlsvc/
+            ./dist/ ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/public_html/ui/xlsvc/
 
       - name: Setup Frontend Configuration
         uses: appleboy/ssh-action@v1.0.0
