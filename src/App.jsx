@@ -113,7 +113,9 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 // API Configuration
-const API_BASE = "http://127.0.0.1:5000/api";
+const API_BASE = import.meta.env.DEV
+  ? "http://127.0.0.1:5000/api"
+  : "https://api.xlsvc.jsilverman.ca/api";
 
 function App() {
   const [user, setUser] = useState(null);
