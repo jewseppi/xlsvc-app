@@ -395,7 +395,6 @@ function Dashboard({ user, logout }) {
 
   useEffect(() => {
     loadFiles();
-    loadProcessedFiles();
   }, []);
 
   const loadFiles = async () => {
@@ -407,18 +406,6 @@ function Dashboard({ user, logout }) {
       setFiles(response.data.files);
     } catch (err) {
       console.error("Error loading files:", err);
-    }
-  };
-
-  const loadProcessedFiles = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE}/processed-files`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProcessedFiles(response.data.processed_files);
-    } catch (err) {
-      console.error("Error loading processed files:", err);
     }
   };
 
