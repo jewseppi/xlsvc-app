@@ -370,6 +370,43 @@ function Dashboard({ user, logout }) {
     }
   };
 
+  const testGitHubDetailed = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      console.log("=== DETAILED GITHUB TEST ===");
+
+      // Test 1: Basic GitHub auth test
+      console.log("1. Testing basic GitHub auth...");
+      const authResponse = await axios.get(`${API_BASE}/test-github`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("Auth test result:", authResponse.data);
+
+      // Test 2: Test the actual dispatch call with debug info
+      console.log("2. Testing repository dispatch with debug...");
+      const dispatchResponse = await axios.post(
+        `${API_BASE}/test-dispatch`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log("Dispatch test result:", dispatchResponse.data);
+
+      alert("Tests completed - check console for detailed results");
+    } catch (err) {
+      console.error("=== DETAILED GITHUB TEST ERROR ===");
+      console.error("Error:", err);
+      console.error("Response:", err.response?.data);
+      alert(
+        `Test failed: ${
+          err.response?.data?.error || err.message
+        }\nCheck console for details`
+      );
+    }
+  };
+
   const pollJobStatus = async (jobId) => {
     const token = localStorage.getItem("token");
     let attempts = 0;
@@ -827,7 +864,7 @@ function Dashboard({ user, logout }) {
                   <Button variant="ghost" small onClick={debugStorage}>
                     🔍 Debug
                   </Button>
-                  <Button variant="ghost" small onClick={testGitHub}>
+                  <Button variant="ghost" small onClick={testGitHubDetailed}>
                     🔗 Test GitHub
                   </Button>
                 </div>
