@@ -268,6 +268,29 @@ function AuthPage({ setUser }) {
   );
 }
 
+const testGitHub = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.get(`${API_BASE}/test-github`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("=== GITHUB TEST SUCCESS ===");
+    console.log(response.data);
+    alert(
+      `GitHub Test Result: ${response.data.status}\nCheck console for details`
+    );
+  } catch (err) {
+    console.error("=== GITHUB TEST ERROR ===");
+    console.error("Error:", err);
+    console.error("Response:", err.response?.data);
+    alert(
+      `GitHub Test Failed: ${
+        err.response?.data?.error || err.message
+      }\nCheck console for details`
+    );
+  }
+};
+
 function Dashboard({ user, logout }) {
   const [files, setFiles] = useState([]);
   const [processedFiles, setProcessedFiles] = useState([]);
@@ -309,12 +332,41 @@ function Dashboard({ user, logout }) {
       // Start polling for job status
       pollJobStatus(result.job_id);
     } catch (err) {
-      console.error("Automated processing error:", err);
+      console.error("=== AUTOMATED PROCESSING ERROR ===");
+      console.error("Error object:", err);
+      console.error("Error message:", err.message);
+      console.error("Response status:", err.response?.status);
+      console.error("Response data:", err.response?.data);
+      console.error("Response headers:", err.response?.headers);
+
       setJobStatus("failed");
-      setProcessingLog([
-        "❌ Failed to start automated processing",
-        err.response?.data?.error || err.message,
-      ]);
+
+      let errorMessages = ["❌ Failed to start automated processing"];
+
+      if (err.response?.data) {
+        // Server returned an error response
+        if (err.response.data.error) {
+          errorMessages.push(`Server Error: ${err.response.data.error}`);
+        }
+        if (err.response.data.details) {
+          errorMessages.push(`Details: ${err.response.data.details}`);
+        }
+        if (err.response.data.traceback) {
+          errorMessages.push("Check server logs for full traceback");
+          console.error("Server traceback:", err.response.data.traceback);
+        }
+        errorMessages.push(`HTTP Status: ${err.response.status}`);
+      } else if (err.request) {
+        // Request was made but no response received
+        errorMessages.push(
+          "No response from server - check if server is running"
+        );
+      } else {
+        // Something else happened
+        errorMessages.push(`Request Error: ${err.message}`);
+      }
+
+      setProcessingLog(errorMessages);
     }
   };
 
@@ -774,6 +826,9 @@ function Dashboard({ user, logout }) {
                   </Button>
                   <Button variant="ghost" small onClick={debugStorage}>
                     🔍 Debug
+                  </Button>
+                  <Button variant="ghost" small onClick={testGitHub}>
+                    🔗 Test GitHub
                   </Button>
                 </div>
               </CardHeader>
