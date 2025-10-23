@@ -72,6 +72,8 @@ import {
   DownloadCard,
 } from "./styled/ProcessingComponents";
 
+import FilterConfiguration from "./components/FilterConfiguration";
+
 // Global styles
 const GlobalStyle = createGlobalStyle`
   * {
@@ -302,6 +304,13 @@ function Dashboard({ user, logout }) {
   const [processedFile, setProcessedFile] = useState(null);
   const [automatedJob, setAutomatedJob] = useState(null);
   const [jobStatus, setJobStatus] = useState("idle"); // idle, processing, completed, failed
+
+  const [filterRules, setFilterRules] = useState([
+    { column: "F", value: "0" },
+    { column: "G", value: "0" },
+    { column: "H", value: "0" },
+    { column: "I", value: "0" },
+  ]);
 
   const handleAutomatedProcessing = async () => {
     if (!selectedFile) return;
@@ -599,53 +608,38 @@ function Dashboard({ user, logout }) {
     if (!selectedFile) return;
 
     setProcessing(true);
-    setProcessingLog(["Starting file analysis..."]);
+    setProcessingLog(["Starting file processing..."]);
     setProcessedFile(null);
 
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
         `${API_BASE}/process/${selectedFile.id}`,
-        {},
+        { filter_rules: filterRules },
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 300000, // 5 minutes for analysis
+          timeout: 600000,
         }
       );
 
       const result = response.data;
-      console.log("Analysis result:", result);
-
-      if (result.total_rows_to_delete === 0) {
-        setProcessingLog([
-          "Analysis completed!",
-          "No rows found that need deletion.",
-          "Your file doesn't have any rows where columns F, G, H, and I are all empty/zero.",
-        ]);
-        return;
-      }
-
       setProcessingLog([
-        "Analysis completed successfully!",
-        `Found ${result.total_rows_to_delete} rows to delete`,
-        `Sheets affected: ${result.sheets_affected.join(", ")}`,
+        "Processing completed successfully!",
+        `Deleted ${result.deleted_rows} empty rows`,
         ...result.processing_log,
       ]);
 
-      // Set download options
       setProcessedFile({
-        hasRowsToDelete: true,
-        totalRows: result.total_rows_to_delete,
-        sheetsAffected: result.sheets_affected,
-        downloads: result.downloads,
+        id: result.processed_file_id,
+        filename: result.download_filename,
+        deletedRows: result.deleted_rows,
       });
 
-      // Refresh file list
       loadFiles();
     } catch (err) {
-      console.error("Analysis error:", err);
+      console.error("Processing error:", err);
       setProcessingLog([
-        "Analysis failed!",
+        "Processing failed!",
         err.response?.data?.error || "Unknown error occurred",
       ]);
     } finally {
@@ -653,7 +647,6 @@ function Dashboard({ user, logout }) {
     }
   };
 
-  // Update your download section JSX:
   {
     processedFile && (
       <DownloadSection>
@@ -748,8 +741,6 @@ function Dashboard({ user, logout }) {
       </DownloadSection>
     );
   }
-
-  // Replace your handleDownload function with this debug version:
 
   const handleDownload = async (fileId, filename) => {
     console.log("=== DOWNLOAD DEBUG ===");
@@ -923,7 +914,7 @@ function Dashboard({ user, logout }) {
               <CardHeader>
                 <CardTitle>Analyze File</CardTitle>
                 <CardSubtitle>
-                  Find rows where columns F, G, H, I are all empty/zero
+                  Define which columns to check and what conditions to apply
                 </CardSubtitle>
               </CardHeader>
               <CardBody>
@@ -933,6 +924,11 @@ function Dashboard({ user, logout }) {
                       <strong>Selected: </strong>
                       {selectedFile.original_filename}
                     </SelectedFileInfo>
+
+                    <FilterConfiguration
+                      filterRules={filterRules}
+                      setFilterRules={setFilterRules}
+                    />
 
                     <ProcessDescription>
                       Choose your processing method:
