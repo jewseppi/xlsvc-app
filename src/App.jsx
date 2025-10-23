@@ -322,7 +322,7 @@ function Dashboard({ user, logout }) {
       const token = localStorage.getItem("token");
       const response = await axios.post(
         `${API_BASE}/process-automated/${selectedFile.id}`,
-        {},
+        { filter_rules: filterRules },
         {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 10000, // 10 seconds to start the job
