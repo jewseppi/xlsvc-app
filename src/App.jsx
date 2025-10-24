@@ -1145,42 +1145,6 @@ function Dashboard({ user, logout }) {
                       </DownloadSection>
                     )}
 
-                  {/* Automated Processing Results */}
-                  {processedFile && processedFile.isAutomated && (
-                    <DownloadSection>
-                      <h4>Automated Processing Complete!</h4>
-                      <p>Your file has been processed on GitHub Actions</p>
-
-                      <Button
-                        variant="primary"
-                        onClick={() =>
-                          handleDownload(
-                            processedFile.downloadFileId,
-                            processedFile.downloadFilename
-                          )
-                        }
-                        style={{ width: "100%", marginTop: "1rem" }}
-                      >
-                        Download Processed File
-                      </Button>
-
-                      <div
-                        style={{
-                          marginTop: "1rem",
-                          padding: "1rem",
-                          background: "rgba(16, 185, 129, 0.1)",
-                          borderRadius: "8px",
-                          fontSize: "0.875rem",
-                          textAlign: "center",
-                        }}
-                      >
-                        All images, charts, and formatting preserved
-                        <br />
-                        Processed automatically on secure GitHub infrastructure
-                      </div>
-                    </DownloadSection>
-                  )}
-
                   {/* Show when no rows need deletion */}
                   {processedFile && !processedFile.hasRowsToDelete && (
                     <div
