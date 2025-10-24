@@ -73,6 +73,7 @@ import {
 } from "./styled/ProcessingComponents";
 
 import FilterConfiguration from "./components/FilterConfiguration";
+import ProcessingHistory from "./components/ProcessingHistory";
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -907,6 +908,24 @@ function Dashboard({ user, logout }) {
                 </CardBody>
               )}
             </ContentCard>
+
+            {selectedFile && (
+              <ContentCard>
+                <CardHeader>
+                  <CardTitle>Processing History</CardTitle>
+                  <CardSubtitle>
+                    Past results for {selectedFile.original_filename}
+                  </CardSubtitle>
+                </CardHeader>
+                <CardBody>
+                  <ProcessingHistory
+                    fileId={selectedFile.id}
+                    apiBase={API_BASE}
+                    onDownload={handleDownload}
+                  />
+                </CardBody>
+              </ContentCard>
+            )}
           </LeftColumn>
 
           <RightColumn>
