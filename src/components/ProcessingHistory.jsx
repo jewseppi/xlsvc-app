@@ -93,8 +93,13 @@ const StatusBadge = styled.span`
   }};
 `;
 
-function ProcessingHistory({ fileId, apiBase, onDownload }) {
-  const [history, setHistory] = useState([]);
+function ProcessingHistory({
+  fileId,
+  apiBase,
+  onDownload,
+  history,
+  setHistory,
+}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 

@@ -305,6 +305,7 @@ function Dashboard({ user, logout }) {
   const [processedFile, setProcessedFile] = useState(null);
   const [automatedJob, setAutomatedJob] = useState(null);
   const [jobStatus, setJobStatus] = useState("idle"); // idle, processing, completed, failed
+  const [processingHistory, setProcessingHistory] = useState([]);
 
   const [filterRules, setFilterRules] = useState([
     { column: "F", value: "0" },
@@ -312,6 +313,28 @@ function Dashboard({ user, logout }) {
     { column: "H", value: "0" },
     { column: "I", value: "0" },
   ]);
+
+  // Check if current filters match any completed job
+  const checkFilterMatch = () => {
+    const completedJobs = processingHistory.filter(
+      (job) => job.status === "completed"
+    );
+
+    return completedJobs.some((job) => {
+      if (!job.filter_rules || job.filter_rules.length === 0) return false;
+      if (job.filter_rules.length !== filterRules.length) return false;
+
+      return filterRules.every((currentRule) =>
+        job.filter_rules.some(
+          (jobRule) =>
+            jobRule.column === currentRule.column &&
+            jobRule.value === currentRule.value
+        )
+      );
+    });
+  };
+
+  const filtersMatchExisting = selectedFile ? checkFilterMatch() : false;
 
   const handleAutomatedProcessing = async () => {
     if (!selectedFile) return;
@@ -922,6 +945,8 @@ function Dashboard({ user, logout }) {
                     fileId={selectedFile.id}
                     apiBase={API_BASE}
                     onDownload={handleDownload}
+                    history={processingHistory}
+                    setHistory={setProcessingHistory}
                   />
                 </CardBody>
               </ContentCard>
@@ -969,7 +994,11 @@ function Dashboard({ user, logout }) {
                     <Button
                       variant="primary"
                       onClick={handleAutomatedProcessing}
-                      disabled={processing || jobStatus === "processing"}
+                      disabled={
+                        processing ||
+                        jobStatus === "processing" ||
+                        filtersMatchExisting
+                      }
                       style={{ width: "100%", marginTop: "0.5rem" }}
                     >
                       {jobStatus === "processing"
