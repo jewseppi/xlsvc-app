@@ -296,7 +296,6 @@ const testGitHub = async () => {
 
 function Dashboard({ user, logout }) {
   const [files, setFiles] = useState([]);
-  const [processedFiles, setProcessedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -654,9 +653,16 @@ function Dashboard({ user, logout }) {
       ]);
 
       setProcessedFile({
+        // Automated fields
         id: result.processed_file_id,
         filename: result.download_filename,
         deletedRows: result.deleted_rows,
+        // Manual processing fields
+        isAutomated: false,
+        hasRowsToDelete: result.total_rows_to_delete > 0,
+        totalRows: result.total_rows_to_delete,
+        sheetsAffected: result.sheets_affected,
+        downloads: result.downloads, // { macro: {...}, instructions: {...} }
       });
 
       loadFiles();
