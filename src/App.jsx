@@ -1066,7 +1066,20 @@ function Dashboard({ user, logout }) {
                       >
                         📥 Download Processed File
                       </Button>
-
+                      {item.report_file_id && (
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            onDownload(
+                              item.report_file_id,
+                              `DeletionReport_${item.processed_filename}`
+                            )
+                          }
+                          style={{ width: "100%" }}
+                        >
+                          📊 View Deleted Rows
+                        </Button>
+                      )}
                       <div
                         style={{
                           marginTop: "1rem",
@@ -1195,6 +1208,46 @@ function Dashboard({ user, logout }) {
                               Download Instructions (.txt)
                             </Button>
                           </div>
+                          {processedFile.downloads?.report && (
+                            <div
+                              style={{
+                                padding: "1rem",
+                                background: "rgba(16, 185, 129, 0.1)",
+                                borderRadius: "8px",
+                                border: "1px solid rgba(16, 185, 129, 0.3)",
+                              }}
+                            >
+                              <h5
+                                style={{
+                                  color: "#10b981",
+                                  marginBottom: "0.5rem",
+                                }}
+                              >
+                                📊 Deletion Report
+                              </h5>
+                              <p
+                                style={{
+                                  fontSize: "0.875rem",
+                                  marginBottom: "1rem",
+                                  color: "#9ca3af",
+                                }}
+                              >
+                                Excel file showing all rows that will be deleted
+                              </p>
+                              <Button
+                                variant="secondary"
+                                onClick={() =>
+                                  handleDownload(
+                                    processedFile.downloads.report.file_id,
+                                    processedFile.downloads.report.filename
+                                  )
+                                }
+                                style={{ width: "100%" }}
+                              >
+                                Download Deletion Report (.xlsx)
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </DownloadSection>
                     )}
