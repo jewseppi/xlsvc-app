@@ -74,6 +74,7 @@ import {
 
 import FilterConfiguration from "./components/FilterConfiguration";
 import ProcessingHistory from "./components/ProcessingHistory";
+import GeneratedFiles from "./components/GeneratedFiles";
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -939,23 +940,41 @@ function Dashboard({ user, logout }) {
             </ContentCard>
 
             {selectedFile && (
-              <ContentCard>
-                <CardHeader>
-                  <CardTitle>Processing History</CardTitle>
-                  <CardSubtitle>
-                    Past results for {selectedFile.original_filename}
-                  </CardSubtitle>
-                </CardHeader>
-                <CardBody>
-                  <ProcessingHistory
-                    fileId={selectedFile.id}
-                    apiBase={API_BASE}
-                    onDownload={handleDownload}
-                    history={processingHistory}
-                    setHistory={setProcessingHistory}
-                  />
-                </CardBody>
-              </ContentCard>
+              <>
+                <ContentCard>
+                  <CardHeader>
+                    <CardTitle>Processing History</CardTitle>
+                    <CardSubtitle>
+                      Past results for {selectedFile.original_filename}
+                    </CardSubtitle>
+                  </CardHeader>
+                  <CardBody>
+                    <ProcessingHistory
+                      fileId={selectedFile.id}
+                      apiBase={API_BASE}
+                      onDownload={handleDownload}
+                      history={processingHistory}
+                      setHistory={setProcessingHistory}
+                    />
+                  </CardBody>
+                </ContentCard>
+                <ContentCard>
+                  <CardHeader>
+                    <CardTitle>Available Downloads</CardTitle>
+                    <CardSubtitle>
+                      Previously generated files for{" "}
+                      {selectedFile.original_filename}
+                    </CardSubtitle>
+                  </CardHeader>
+                  <CardBody>
+                    <GeneratedFiles
+                      fileId={selectedFile.id}
+                      apiBase={API_BASE}
+                      onDownload={handleDownload}
+                    />
+                  </CardBody>
+                </ContentCard>
+              </>
             )}
           </LeftColumn>
 
