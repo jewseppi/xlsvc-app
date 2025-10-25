@@ -27,6 +27,7 @@ const FileItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: ${(props) => props.theme.spacing.md};
   padding: ${(props) => props.theme.spacing.sm};
   background: ${(props) => props.theme.colors.background.primary};
   border-radius: ${(props) => props.theme.borderRadius.md};
@@ -37,6 +38,16 @@ const FileName = styled.div`
   color: ${(props) => props.theme.colors.text.secondary};
   font-size: 0.875rem;
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+
+  &:hover {
+    overflow: visible;
+    white-space: normal;
+    word-break: break-all;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -102,7 +113,9 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
           <SectionTitle>🖥️ LibreOffice Macros</SectionTitle>
           {files.macros.map((file) => (
             <FileItem key={file.id}>
-              <FileName>{file.original_filename}</FileName>
+              <FileName title={file.original_filename}>
+                {file.original_filename}
+              </FileName>
               <Button
                 variant="primary"
                 small
@@ -120,7 +133,9 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
           <SectionTitle>📋 Instructions</SectionTitle>
           {files.instructions.map((file) => (
             <FileItem key={file.id}>
-              <FileName>{file.original_filename}</FileName>
+              <FileName title={file.original_filename}>
+                {file.original_filename}
+              </FileName>
               <Button
                 variant="secondary"
                 small
@@ -138,7 +153,9 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
           <SectionTitle>📊 Deletion Reports</SectionTitle>
           {files.reports.map((file) => (
             <FileItem key={file.id}>
-              <FileName>{file.original_filename}</FileName>
+              <FileName title={file.original_filename}>
+                {file.original_filename}
+              </FileName>
               <Button
                 variant="secondary"
                 small
