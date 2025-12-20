@@ -1046,8 +1046,6 @@ function Dashboard({ user, logout }) {
                     >
                       {processing
                         ? "Analyzing..."
-                        : macrosExist
-                        ? "📋 Macros Already Generated"
                         : "📋 Generate Instructions & Macro"}
                     </Button>
 
