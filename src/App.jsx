@@ -1007,11 +1007,13 @@ function Dashboard({ user, logout }) {
                     <Button
                       variant="secondary"
                       onClick={handleProcessFile}
-                      disabled={processing || jobStatus === "processing"}
+                      disabled={processing || jobStatus === "processing" || filtersMatchExisting}
                       style={{ width: "100%", marginTop: "1rem" }}
                     >
                       {processing
                         ? "Analyzing..."
+                        : filtersMatchExisting
+                        ? "📋 Already Processed"
                         : "📋 Generate Instructions & Macro"}
                     </Button>
 
