@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ErrorBoundary } from 'react-error-boundary';
 import axios from "axios";
 import styled, { ThemeProvider, createGlobalStyle } from "styled-components";
 import { theme } from "./styled/theme";
@@ -121,6 +122,59 @@ const API_BASE = import.meta.env.DEV
   ? "http://127.0.0.1:5000/api"
   : "https://api.xlsvc.jsilverman.ca/api";
 
+// Error Boundary Fallback Component
+function ErrorFallback({error, resetErrorBoundary}) {
+  return (
+    <div style={{
+      padding: '2rem',
+      textAlign: 'center',
+      background: '#f8f9fa',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}>
+      <h2 style={{color: '#dc3545', marginBottom: '1rem'}}>Something went wrong</h2>
+      <pre style={{
+        color: '#dc3545',
+        background: '#f8d7da',
+        padding: '1rem',
+        borderRadius: '4px',
+        marginBottom: '1rem',
+        fontSize: '0.875rem'
+      }}>
+        {error.message}
+      </pre>
+      <Button variant="primary" onClick={resetErrorBoundary}>
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+// Processing Overlay Component
+const ProcessingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  color: white;
+  font-size: 1.125rem;
+  text-align: center;
+
+  div {
+    margin: 0.5rem 0;
+  }
+`;
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -170,7 +224,9 @@ function App() {
         {!user ? (
           <AuthPage setUser={setUser} />
         ) : (
-          <Dashboard user={user} logout={logout} />
+          <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <Dashboard user={user} logout={logout} />
+          </ErrorBoundary>
         )}
       </AppContainer>
     </ThemeProvider>
@@ -508,13 +564,34 @@ function Dashboard({ user, logout }) {
         }
       } catch (err) {
         console.error("Status polling error:", err);
+
+        // Count consecutive errors to avoid infinite retries on persistent failures
+        if (!poll.consecutiveErrors) {
+          poll.consecutiveErrors = 0;
+        }
+        poll.consecutiveErrors++;
+
+        // If we have 3+ consecutive errors, stop polling and show error
+        if (poll.consecutiveErrors >= 3) {
+          setJobStatus("failed");
+          setProcessingLog((prev) => [
+            ...prev,
+            "❌ Lost connection to processing server",
+            "Please check your internet connection and try again",
+          ]);
+          return; // Stop polling
+        }
+
         if (attempts < maxAttempts) {
-          setTimeout(poll, 5000);
+          // Continue polling but with exponential backoff for errors
+          const delay = Math.min(5000 * Math.pow(1.5, poll.consecutiveErrors - 1), 30000);
+          setTimeout(poll, delay);
         } else {
           setJobStatus("failed");
           setProcessingLog((prev) => [
             ...prev,
-            "❌ Failed to check job status",
+            "⏰ Processing timeout - lost connection to server",
+            "The job may still be running. Check back later.",
           ]);
         }
       }
@@ -864,6 +941,13 @@ function Dashboard({ user, logout }) {
 
   return (
     <>
+      {jobStatus === "processing" && (
+        <ProcessingOverlay>
+          <div>🔄 Processing via GitHub Actions...</div>
+          <div>This may take 2-3 minutes</div>
+          <div>Please keep this page open</div>
+        </ProcessingOverlay>
+      )}
       <DashboardHeader>
         <HeaderContent>
           <DashboardTitle>Excel Processor</DashboardTitle>
