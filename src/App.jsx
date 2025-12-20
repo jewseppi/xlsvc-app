@@ -306,6 +306,11 @@ function Dashboard({ user, logout }) {
   const [automatedJob, setAutomatedJob] = useState(null);
   const [jobStatus, setJobStatus] = useState("idle"); // idle, processing, completed, failed
   const [processingHistory, setProcessingHistory] = useState([]);
+  const [generatedFiles, setGeneratedFiles] = useState({
+    macros: [],
+    instructions: [],
+    reports: [],
+  });
 
   const [filterRules, setFilterRules] = useState([
     { column: "F", value: "0" },
@@ -314,7 +319,7 @@ function Dashboard({ user, logout }) {
     { column: "I", value: "0" },
   ]);
 
-  // Check if current filters match any completed job
+  // Check if current filters match any completed job (for automated processing)
   const checkFilterMatch = () => {
     const completedJobs = processingHistory.filter(
       (job) => job.status === "completed"
@@ -335,6 +340,9 @@ function Dashboard({ user, logout }) {
   };
 
   const filtersMatchExisting = selectedFile ? checkFilterMatch() : false;
+
+  // Check if macros already exist for this file
+  const macrosExist = selectedFile ? generatedFiles.macros.length > 0 : false;
 
   const handleAutomatedProcessing = async () => {
     if (!selectedFile) return;
@@ -519,6 +527,28 @@ function Dashboard({ user, logout }) {
     loadFiles();
   }, []);
 
+  // Load generated files when selected file changes
+  useEffect(() => {
+    if (selectedFile) {
+      loadGeneratedFiles(selectedFile.id);
+    } else {
+      setGeneratedFiles({ macros: [], instructions: [], reports: [] });
+    }
+  }, [selectedFile]);
+
+  const loadGeneratedFiles = async (fileId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE}/files/${fileId}/generated`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setGeneratedFiles(response.data);
+    } catch (err) {
+      console.error("Error loading generated files:", err);
+      setGeneratedFiles({ macros: [], instructions: [], reports: [] });
+    }
+  };
+
   const loadFiles = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -667,6 +697,10 @@ function Dashboard({ user, logout }) {
       });
 
       loadFiles();
+      // Refresh generated files list
+      if (selectedFile) {
+        loadGeneratedFiles(selectedFile.id);
+      }
     } catch (err) {
       console.error("Processing error:", err);
       setProcessingLog([
@@ -1007,13 +1041,13 @@ function Dashboard({ user, logout }) {
                     <Button
                       variant="secondary"
                       onClick={handleProcessFile}
-                      disabled={processing || jobStatus === "processing" || filtersMatchExisting}
+                      disabled={processing || jobStatus === "processing" || macrosExist}
                       style={{ width: "100%", marginTop: "1rem" }}
                     >
                       {processing
                         ? "Analyzing..."
-                        : filtersMatchExisting
-                        ? "📋 Already Processed"
+                        : macrosExist
+                        ? "📋 Macros Already Generated"
                         : "📋 Generate Instructions & Macro"}
                     </Button>
 
