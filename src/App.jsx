@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import axios from "axios";
 import styled, { ThemeProvider, createGlobalStyle } from "styled-components";
 import { theme } from "./styled/theme";
+import LandingPage from "./components/LandingPage";
 import {
   AppContainer,
   LoadingContainer,
@@ -218,18 +220,25 @@ function App() {
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <GlobalStyle />
-      <AppContainer>
-        {!user ? (
-          <AuthPage setUser={setUser} />
-        ) : (
-          <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <Dashboard user={user} logout={logout} />
-          </ErrorBoundary>
-        )}
-      </AppContainer>
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider theme={theme}>
+        <GlobalStyle />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/app" element={
+            <AppContainer>
+              {!user ? (
+                <AuthPage setUser={setUser} />
+              ) : (
+                <ErrorBoundary FallbackComponent={ErrorFallback}>
+                  <Dashboard user={user} logout={logout} />
+                </ErrorBoundary>
+              )}
+            </AppContainer>
+          } />
+        </Routes>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 
