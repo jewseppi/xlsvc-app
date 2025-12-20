@@ -1051,7 +1051,7 @@ function Dashboard({ user, logout }) {
                     >
                       {processing
                         ? "Analyzing..."
-                        : "📋 Generate Instructions & Macro"}
+                        : "📋 Generate Macro & Instructions"}
                     </Button>
 
                     {/* Automated Processing Button */}
