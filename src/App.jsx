@@ -632,6 +632,11 @@ function Dashboard({ user, logout }) {
 
       alert(`Cleaned up ${response.data.removed_count} missing files`);
       loadFiles(); // Refresh the list
+      // Also refresh generated files and processing history for currently selected file
+      if (selectedFile) {
+        loadGeneratedFiles(selectedFile.id);
+        setProcessingHistory([]); // Clear history to trigger reload
+      }
     } catch (err) {
       console.error("Cleanup error:", err);
       alert(
