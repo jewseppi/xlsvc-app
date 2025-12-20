@@ -1069,18 +1069,6 @@ function Dashboard({ user, logout }) {
                         ? "🔄 Processing on GitHub..."
                         : "⚡ Automated Processing"}
                     </Button>
-
-                    <div
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "#6b7280",
-                        marginTop: "0.5rem",
-                        textAlign: "center",
-                      }}
-                    >
-                      Automated processing preserves all images, charts, and
-                      formatting
-                    </div>
                   </ProcessingSection>
                 ) : (
                   <EmptyState>
