@@ -1,438 +1,662 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>xlsvc - Clean Multi-Sheet Excel Workbooks in One Click</title>
-  <meta name="description" content="Delete rows across multiple Excel sheets with custom filter conditions. Preserves images and formatting. Open source and free to use.">
-  <meta name="keywords" content="excel cleaner, batch excel processing, delete excel rows, multi-sheet excel, excel image preservation">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>xlsvc - Delete Rows Across All Excel Sheets at Once</title>
+    <meta
+      name="description"
+      content="Set your filter once, process 30+ sheets simultaneously. Images and formatting preserved. Open source and free."
+    />
+    <meta
+      name="keywords"
+      content="excel batch delete, multi-sheet excel processing, delete excel rows, excel image preservation, excel automation"
+    />
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="xlsvc - Excel Batch Processor">
-  <meta property="og:description" content="Clean massive Excel workbooks in one click. Custom filters, all sheets, images preserved.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://xlsvc.jsilverman.ca">
+    <!-- Open Graph -->
+    <meta
+      property="og:title"
+      content="xlsvc - Delete Rows Across All Excel Sheets"
+    />
+    <meta
+      property="og:description"
+      content="Set your filter once, process 30+ sheets simultaneously. Images and formatting preserved."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://xlsvc.jsilverman.ca" />
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="xlsvc - Excel Batch Processor">
-  <meta name="twitter:description" content="Clean massive Excel workbooks in one click. Custom filters, all sheets, images preserved.">
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="xlsvc - Delete Rows Across All Excel Sheets"
+    />
+    <meta
+      name="twitter:description"
+      content="Set your filter once, process 30+ sheets simultaneously. Images and formatting preserved."
+    />
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      line-height: 1.6;
-      color: #1a1a2e;
-      background: #f5f3f0;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-
-    /* Header */
-    header {
-      background: #1a1a2e;
-      padding: 1rem 0;
-    }
-
-    header .container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo {
-      color: #fff;
-      font-size: 1.5rem;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .logo span {
-      color: #6366f1;
-    }
-
-    nav a {
-      color: #fff;
-      text-decoration: none;
-      margin-left: 2rem;
-      opacity: 0.9;
-    }
-
-    nav a:hover {
-      opacity: 1;
-    }
-
-    /* Hero */
-    .hero {
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #fff;
-      padding: 5rem 0;
-      text-align: center;
-    }
-
-    .hero h1 {
-      font-size: 3rem;
-      margin-bottom: 1.5rem;
-      line-height: 1.2;
-    }
-
-    .hero h1 span {
-      color: #6366f1;
-    }
-
-    .hero p {
-      font-size: 1.25rem;
-      opacity: 0.9;
-      max-width: 600px;
-      margin: 0 auto 2rem;
-    }
-
-    .cta-buttons {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 1rem 2rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 1.1rem;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    .btn-primary {
-      background: #6366f1;
-      color: #fff;
-    }
-
-    .btn-secondary {
-      background: transparent;
-      color: #fff;
-      border: 2px solid rgba(255,255,255,0.3);
-    }
-
-    /* Problem Section */
-    .problem {
-      padding: 4rem 0;
-      background: #f5f3f0;
-    }
-
-    .problem h2 {
-      text-align: center;
-      font-size: 2rem;
-      margin-bottom: 3rem;
-      color: #1a1a2e;
-    }
-
-    .problem-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: center;
-    }
-
-    .problem-text h3 {
-      color: #dc2626;
-      font-size: 1.3rem;
-      margin-bottom: 1rem;
-    }
-
-    .problem-text p {
-      color: #444;
-      line-height: 1.8;
-    }
-
-    .solution-text h3 {
-      color: #6366f1;
-      font-size: 1.3rem;
-      margin-bottom: 1rem;
-    }
-
-    .solution-text p {
-      color: #444;
-      line-height: 1.8;
-    }
-
-    /* Features */
-    .features {
-      padding: 4rem 0;
-      background: #e8e6e3;
-    }
-
-    .features h2 {
-      text-align: center;
-      font-size: 2rem;
-      margin-bottom: 3rem;
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2rem;
-    }
-
-    .feature-card {
-      background: #faf9f7;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    .feature-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .feature-card h3 {
-      margin-bottom: 0.5rem;
-      font-size: 1.2rem;
-    }
-
-    .feature-card p {
-      color: #666;
-      font-size: 0.95rem;
-    }
-
-    /* How it Works */
-    .how-it-works {
-      padding: 4rem 0;
-      background: #f5f3f0;
-    }
-
-    .how-it-works h2 {
-      text-align: center;
-      font-size: 2rem;
-      margin-bottom: 3rem;
-    }
-
-    .steps {
-      display: flex;
-      justify-content: space-between;
-      gap: 2rem;
-      flex-wrap: wrap;
-    }
-
-    .step {
-      flex: 1;
-      min-width: 200px;
-      text-align: center;
-    }
-
-    .step-number {
-      width: 50px;
-      height: 50px;
-      background: #6366f1;
-      color: #fff;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin: 0 auto 1rem;
-    }
-
-    .step h3 {
-      margin-bottom: 0.5rem;
-    }
-
-    .step p {
-      color: #666;
-      font-size: 0.95rem;
-    }
-
-    /* Open Source */
-    .open-source {
-      padding: 4rem 0;
-      background: #1a1a2e;
-      color: #fff;
-      text-align: center;
-    }
-
-    .open-source h2 {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-
-    .open-source p {
-      opacity: 0.9;
-      max-width: 600px;
-      margin: 0 auto 2rem;
-    }
-
-    /* Footer */
-    footer {
-      padding: 2rem 0;
-      background: #0f0f1a;
-      color: #fff;
-      text-align: center;
-    }
-
-    footer p {
-      opacity: 0.7;
-      font-size: 0.9rem;
-    }
-
-    footer a {
-      color: #6366f1;
-      text-decoration: none;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .hero h1 {
-        font-size: 2rem;
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
-      .problem-grid {
-        grid-template-columns: 1fr;
+      :root {
+        --primary: #0066cc;
+        --primary-dark: #004d99;
+        --secondary: #00a67e;
+        --dark: #1a1f36;
+        --dark-light: #2d3748;
+        --gray: #4a5568;
+        --light-gray: #e2e8f0;
+        --bg-light: #f7fafc;
+        --bg-white: #ffffff;
+        --text: #2d3748;
+        --text-light: #718096;
+        --success: #00a67e;
+        --warning: #ed8936;
+        --radius: 12px;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter",
+          Roboto, Oxygen, Ubuntu, sans-serif;
+        line-height: 1.7;
+        color: var(--text);
+        background: var(--bg-white);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* Header */
+      header {
+        background: var(--bg-white);
+        padding: 1.25rem 0;
+        border-bottom: 1px solid var(--light-gray);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      header .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        color: var(--dark);
+        font-size: 1.75rem;
+        font-weight: 700;
+        text-decoration: none;
+        letter-spacing: -0.5px;
+      }
+
+      .logo span {
+        color: var(--primary);
+      }
+
+      nav {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
       }
 
       nav a {
-        margin-left: 1rem;
-        font-size: 0.9rem;
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
       }
-    }
-  </style>
-</head>
-<body>
 
-  <header>
-    <div class="container">
-      <a href="/" class="logo">xls<span>vc</span></a>
-      <nav>
-        <a href="#features">Features</a>
-        <a href="https://github.com/jewseppi/xlsvc" target="_blank">GitHub</a>
-        <a href="/app">Launch App</a>
-      </nav>
-    </div>
-  </header>
+      nav a:hover {
+        color: var(--primary);
+      }
 
-  <section class="hero">
-    <div class="container">
-      <h1>Clean Massive Excel Workbooks<br><span>In One Click</span></h1>
-      <p>Delete rows across multiple Excel sheets with custom filter conditions. Preserves your images and formatting. Open source and free.</p>
-      <div class="cta-buttons">
-        <a href="/app" class="btn btn-primary">Try It Free</a>
-        <a href="https://github.com/jewseppi/xlsvc" class="btn btn-secondary" target="_blank">View Source</a>
+      .nav-cta {
+        background: var(--primary);
+        color: white !important;
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+
+      .nav-cta:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+      }
+
+      /* Hero */
+      .hero {
+        background: linear-gradient(
+          135deg,
+          var(--dark) 0%,
+          var(--dark-light) 100%
+        );
+        color: white;
+        padding: 4rem 0 4.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 20% 50%,
+            rgba(0, 102, 204, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 80%,
+            rgba(0, 166, 126, 0.1) 0%,
+            transparent 50%
+          );
+        pointer-events: none;
+      }
+
+      .hero .container {
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero-content {
+        max-width: 720px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .hero-badge {
+        display: inline-block;
+        background: rgba(0, 166, 126, 0.15);
+        color: var(--secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0, 166, 126, 0.3);
+      }
+
+      .hero h1 {
+        font-size: 3.25rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: -1px;
+      }
+
+      .hero h1 .highlight {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .cta-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 2.5rem;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-dark);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: white;
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+
+      /* Trust indicators */
+      .trust-bar {
+        display: flex;
+        gap: 2.25rem;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        opacity: 0.7;
+        font-size: 0.8125rem;
+      }
+
+      .trust-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .trust-icon {
+        font-size: 1.125rem;
+      }
+
+      /* Problem Section - Concise */
+      .problem {
+        padding: 2.5rem 0;
+        background: var(--bg-white);
+        border-bottom: 1px solid var(--light-gray);
+      }
+
+      .problem-intro {
+        max-width: 700px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .problem-intro h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.3px;
+        line-height: 1.3;
+      }
+
+      .problem-intro p {
+        font-size: 0.9375rem;
+        color: var(--text-light);
+        line-height: 1.5;
+      }
+
+      .problem-intro p .highlight {
+        color: var(--primary);
+        font-weight: 600;
+      }
+
+      /* Section Headers (for Features, How It Works, etc) */
+      .section-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+
+      .section-badge {
+        display: inline-block;
+        background: rgba(0, 102, 204, 0.1);
+        color: var(--primary);
+        padding: 0.4rem 0.9rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      .section-header h2 {
+        font-size: 2.25rem;
+        margin-bottom: 0.75rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: var(--dark);
+      }
+
+      .section-header p {
+        font-size: 1.0625rem;
+        color: var(--text-light);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      /* Features */
+      .features {
+        padding: 4rem 0;
+        background: var(--bg-white);
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .feature-card {
+        background: var(--bg-light);
+        padding: 1.75rem;
+        border-radius: var(--radius);
+        transition: all 0.3s;
+        border: 1px solid transparent;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--light-gray);
+      }
+
+      .feature-icon {
+        width: 52px;
+        height: 52px;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.625rem;
+        margin-bottom: 1rem;
+      }
+
+      .feature-card h3 {
+        font-size: 1.125rem;
+        margin-bottom: 0.625rem;
+        font-weight: 700;
+        color: var(--dark);
+      }
+
+      .feature-card p {
+        color: var(--text-light);
+        line-height: 1.6;
+        font-size: 0.9375rem;
+      }
+
+      /* How it Works */
+      .how-it-works {
+        padding: 4rem 0;
+        background: var(--bg-light);
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .step {
+        text-align: center;
+        position: relative;
+      }
+
+      .step::after {
+        content: "→";
+        position: absolute;
+        top: 25px;
+        right: -1.25rem;
+        font-size: 1.75rem;
+        color: var(--light-gray);
+        font-weight: bold;
+      }
+
+      .step:last-child::after {
+        display: none;
+      }
+
+      .step-number {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.625rem;
+        font-weight: 800;
+        margin: 0 auto 1rem;
+        box-shadow: var(--shadow);
+      }
+
+      .step h3 {
+        font-size: 1.0625rem;
+        margin-bottom: 0.625rem;
+        font-weight: 700;
+        color: var(--dark);
+      }
+
+      .step p {
+        color: var(--text-light);
+        line-height: 1.6;
+        font-size: 0.9375rem;
+      }
+
+      /* Tech Stack */
+      .tech-stack {
+        padding: 3.5rem 0;
+        background: var(--bg-white);
+      }
+
+      .tech-grid {
+        display: flex;
+        justify-content: center;
+        gap: 2.5rem;
+        flex-wrap: wrap;
+        margin-top: 1.5rem;
+      }
+
+      .tech-item {
+        text-align: center;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .tech-item:hover {
+        opacity: 1;
+      }
+
+      .tech-icon {
+        font-size: 2.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .tech-label {
+        font-size: 0.8125rem;
+        color: var(--text-light);
+        font-weight: 600;
+      }
+
+      /* Footer */
+      footer {
+        padding: 2rem 0;
+        background: var(--dark);
+        color: rgba(255, 255, 255, 0.7);
+        text-align: center;
+      }
+
+      footer p {
+        font-size: 0.875rem;
+      }
+
+      footer a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      footer a:hover {
+        color: var(--secondary);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .hero h1 {
+          font-size: 2rem;
+        }
+
+        .hero p {
+          font-size: 1.0625rem;
+        }
+
+        nav {
+          gap: 1rem;
+        }
+
+        nav a {
+          font-size: 0.875rem;
+        }
+
+        .problem-intro h2 {
+          font-size: 1.25rem;
+        }
+
+        .problem-intro p {
+          font-size: 0.875rem;
+        }
+
+        .section-header h2 {
+          font-size: 1.875rem;
+        }
+
+        .step::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <a href="/" class="logo">xls<span>vc</span></a>
+        <nav>
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How It Works</a>
+          <a href="https://github.com/jewseppi/xlsvc" target="_blank">GitHub</a>
+          <a href="/app" class="nav-cta">Launch App →</a>
+        </nav>
       </div>
-    </div>
-  </section>
+    </header>
 
-  <section class="problem">
-    <div class="container">
-      <h2>The Problem We Solve</h2>
-      <div class="problem-grid">
-        <div class="problem-text">
-          <h3>😤 The Manual Way</h3>
-          <p>Got a workbook with 30 sheets? Need to delete rows based on a condition? Excel makes you do it one sheet at a time. Click, filter, delete, repeat. Thirty times. And when you finally try a cleanup tool to speed things up, it strips out all your images.</p>
-        </div>
-        <div class="solution-text">
-          <h3>✨ The xlsvc Way</h3>
-          <p>Upload your file. Pick your columns. Set your condition. Hit process. Every sheet is cleaned at once, images and formatting intact. You get the cleaned file plus a report showing exactly which rows were removed and why.</p>
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1>Excel Batch <span class="highlight">Row Deletion</span></h1>
+          <p>
+            Delete rows across all sheets at once. Set your filter, process 30+
+            sheets simultaneously. Images and formatting preserved.
+          </p>
+          <div class="cta-buttons">
+            <a href="/app" class="btn btn-primary">Start Processing →</a>
+            <a
+              href="https://github.com/jewseppi/xlsvc"
+              class="btn btn-secondary"
+              target="_blank"
+              >View Code</a
+            >
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="features" id="features">
-    <div class="container">
-      <h2>Features</h2>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3>Multi-Sheet Processing</h3>
-          <p>Apply your filter rules to every sheet in the workbook at once. No more clicking through tabs one by one.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🎯</div>
-          <h3>Custom Filter Conditions</h3>
-          <p>Set rules on any column. Delete rows where cells are empty, zero, or match specific values. Your rules, your data.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🖼️</div>
-          <h3>Image Preservation</h3>
-          <p>Unlike most tools, we preserve your embedded images, charts, and formatting. What you put in is what you get out.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <h3>Fast Processing</h3>
-          <p>Powered by LibreOffice under the hood. Handles large workbooks with thousands of rows efficiently.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📋</div>
-          <h3>Deletion Reports</h3>
-          <p>Get a detailed report of exactly which rows were deleted and why. Full audit trail for your records.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔓</div>
-          <h3>Open Source</h3>
-          <p>Fully open source. Self-host it for free, or use our hosted version. Inspect the code, trust the process.</p>
+    <section class="problem">
+      <div class="container">
+        <div class="problem-intro">
+          <h2>Delete rows across multiple sheets</h2>
+          <p>
+            Excel's AutoFilter works one sheet at a time. xlsvc processes them
+            all at once and preserves images.
+          </p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="how-it-works">
-    <div class="container">
-      <h2>How It Works</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">1</div>
-          <h3>Upload</h3>
-          <p>Drop your Excel file (.xlsx or .xls)</p>
+    <section class="how-it-works" id="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-badge">How It Works</div>
+          <h2>Simple Process, Powerful Results</h2>
+          <p>From upload to download in three easy steps</p>
         </div>
-        <div class="step">
-          <div class="step-number">2</div>
-          <h3>Configure</h3>
-          <p>Set which columns and conditions to filter on</p>
-        </div>
-        <div class="step">
-          <div class="step-number">3</div>
-          <h3>Process</h3>
-          <p>We clean all sheets and preserve your images</p>
-        </div>
-        <div class="step">
-          <div class="step-number">4</div>
-          <h3>Download</h3>
-          <p>Get your cleaned workbook and deletion report</p>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>Upload Workbook</h3>
+            <p>
+              Drag and drop your Excel file. Supports .xls and .xlsx formats
+              with any number of sheets.
+            </p>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>Set Filter Rules</h3>
+            <p>
+              Choose columns and define conditions. Delete rows where cells are
+              empty, zero, or match specific values.
+            </p>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>Download Results</h3>
+            <p>
+              Get your cleaned workbook plus a detailed deletion report. All
+              images and formatting preserved.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="open-source">
-    <div class="container">
-      <h2>100% Open Source</h2>
-      <p>Don't trust us with your data? Run it yourself. The entire codebase is available on GitHub. Self-host for free, or let us handle the infrastructure.</p>
-      <a href="https://github.com/jewseppi/xlsvc" class="btn btn-primary" target="_blank">View on GitHub</a>
-    </div>
-  </section>
-
-  <footer>
-    <div class="container">
-      <p>Built by <a href="https://jsilverman.ca" target="_blank">jsilverman</a> · <a href="https://github.com/jewseppi/xlsvc" target="_blank">GitHub</a></p>
-    </div>
-  </footer>
-
-</body>
+    <footer>
+      <div class="container">
+        <p>
+          Built by
+          <a href="https://jsilverman.ca" target="_blank">Joseph Silverman</a> •
+          <a href="https://github.com/jewseppi/xlsvc">View on GitHub</a> • MIT
+          License
+        </p>
+      </div>
+    </footer>
+  </body>
 </html>
