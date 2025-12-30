@@ -221,23 +221,23 @@ function App() {
 
   return (
     <BrowserRouter>
-      <ThemeProvider theme={theme}>
-        <GlobalStyle />
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/app" element={
-            <AppContainer>
-              {!user ? (
-                <AuthPage setUser={setUser} />
-              ) : (
+      <AppContainer>
+        {!user ? (
+          <AuthPage setUser={setUser} />
+        ) : (
                 <ErrorBoundary FallbackComponent={ErrorFallback}>
-                  <Dashboard user={user} logout={logout} />
+          <Dashboard user={user} logout={logout} />
                 </ErrorBoundary>
-              )}
-            </AppContainer>
+        )}
+      </AppContainer>
           } />
         </Routes>
-      </ThemeProvider>
+    </ThemeProvider>
     </BrowserRouter>
   );
 }
