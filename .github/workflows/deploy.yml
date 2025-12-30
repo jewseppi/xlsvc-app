@@ -22,11 +22,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build application
         run: npm run build
@@ -76,15 +76,28 @@ jobs:
 
             cd ~/public_html/ui/xlsvc
 
-            # Create .htaccess for React SPA routing
+            # Create app directory and move React files there
+            mkdir -p app
+
+            # Move all React build files to /app/ subfolder (except landing.html)
+            for item in assets index.html favicon.ico; do
+              if [ -e "$item" ]; then
+                mv "$item" app/ 2>/dev/null || true
+              fi
+            done
+
+            # Create .htaccess for routing
             cat > .htaccess << 'HTACCESS_EOF'
             RewriteEngine On
 
-            # Handle React Router (SPA routing)
+            # Serve landing.html at root
+            RewriteRule ^$ /landing.html [L]
+
+            # Handle React app routes under /app/
             RewriteCond %{REQUEST_FILENAME} !-f
             RewriteCond %{REQUEST_FILENAME} !-d
-            RewriteCond %{REQUEST_URI} !^/assets/
-            RewriteRule ^(.*)$ /index.html [QSA,L]
+            RewriteCond %{REQUEST_URI} ^/app/
+            RewriteRule ^ /app/index.html [L]
 
             # Security headers
             <IfModule mod_headers.c>
@@ -115,6 +128,9 @@ jobs:
             HTACCESS_EOF
 
             # Set permissions
+            chmod 644 .htaccess landing.html 2>/dev/null || true
+
+            # Set permissions
             chmod 644 .htaccess
             find . -type f -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.json" | xargs chmod 644 2>/dev/null || true
             find . -type d | xargs chmod 755 2>/dev/null || true
@@ -124,8 +140,10 @@ jobs:
       - name: Verify Deployment
         run: |
           echo "Frontend Deployment Complete!"
-          echo "Site: https://xlsvc.jsilverman.ca/"
+          echo "Landing: https://xlsvc.jsilverman.ca/"
+          echo "App: https://xlsvc.jsilverman.ca/app/"
           echo ""
           echo "Testing frontend..."
           sleep 10
-          curl -f -s -o /dev/null -w "%{http_code}" https://xlsvc.jsilverman.ca/ || echo "Frontend not responding yet - check configuration"
+          curl -f -s -o /dev/null -w "%{http_code}" https://xlsvc.jsilverman.ca/ || echo "Landing page not responding yet - check configuration"
+          curl -f -s -o /dev/null -w "%{http_code}" https://xlsvc.jsilverman.ca/app/ || echo "App not responding yet - check configuration"
