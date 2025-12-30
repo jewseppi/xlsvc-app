@@ -129,9 +129,6 @@ jobs:
 
             # Set permissions
             chmod 644 .htaccess landing.html 2>/dev/null || true
-
-            # Set permissions
-            chmod 644 .htaccess
             find . -type f -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.json" | xargs chmod 644 2>/dev/null || true
             find . -type d | xargs chmod 755 2>/dev/null || true
 
