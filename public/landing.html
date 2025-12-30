@@ -3,37 +3,120 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>xlsvc - Delete Rows Across All Excel Sheets at Once</title>
+    <title>
+      Free Excel Batch Row Delete Tool | Multi-Sheet Processing, Preserve Images
+      | xlsvc
+    </title>
     <meta
       name="description"
-      content="Set your filter once, process 30+ sheets simultaneously. Images and formatting preserved. Open source and free."
+      content="Free online tool to delete rows across multiple Excel sheets at once. Preserve images, formatting, and formulas. No VBA macros needed. Process all worksheets simultaneously with custom filter conditions."
     />
     <meta
       name="keywords"
-      content="excel batch delete, multi-sheet excel processing, delete excel rows, excel image preservation, excel automation"
+      content="excel batch delete rows, delete rows multiple sheets excel, excel multi-sheet processing, delete excel rows preserve images, excel automation tool, batch excel processing, remove rows all worksheets, excel cleanup tool, excel row filter delete"
     />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://xlsvc.jsilverman.ca" />
+
+    <!-- Robots -->
+    <meta name="robots" content="index, follow" />
+
+    <!-- Author -->
+    <meta name="author" content="Joseph Silverman" />
+
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "xlsvc",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Free web-based tool to delete rows across multiple Excel sheets simultaneously while preserving images and formatting.",
+        "url": "https://xlsvc.jsilverman.ca",
+        "author": {
+          "@type": "Person",
+          "name": "Joseph Silverman",
+          "url": "https://jsilverman.ca"
+        },
+        "featureList": [
+          "Multi-sheet batch row deletion",
+          "Image preservation during row deletion",
+          "Formatting preservation",
+          "Deletion audit reports",
+          "Browser-based processing"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I delete the same rows from multiple Excel sheets at once?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Upload your workbook to xlsvc, set your filter condition, and click Process. The tool applies your filter across every sheet simultaneously—no VBA macros required."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Will my embedded images be preserved when deleting rows?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Unlike most Excel processing libraries, xlsvc uses LibreOffice UNO API which properly handles embedded images. Your product photos, charts, and logos remain intact."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is my data secure?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Client-side processing keeps your data in your browser. For server-side processing, files are encrypted during upload and automatically deleted after download."
+            }
+          }
+        ]
+      }
+    </script>
 
     <!-- Open Graph -->
     <meta
       property="og:title"
-      content="xlsvc - Delete Rows Across All Excel Sheets"
+      content="xlsvc - Free Excel Batch Row Delete Tool"
     />
     <meta
       property="og:description"
-      content="Set your filter once, process 30+ sheets simultaneously. Images and formatting preserved."
+      content="Delete rows across all Excel sheets at once. Preserve images and formatting. No VBA required. Free and open source."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://xlsvc.jsilverman.ca" />
+    <meta
+      property="og:image"
+      content="https://xlsvc.jsilverman.ca/og-image.png"
+    />
+    <meta property="og:site_name" content="xlsvc" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="xlsvc - Delete Rows Across All Excel Sheets"
+      content="xlsvc - Free Excel Batch Row Delete Tool"
     />
     <meta
       name="twitter:description"
-      content="Set your filter once, process 30+ sheets simultaneously. Images and formatting preserved."
+      content="Delete rows across all Excel sheets at once. Preserve images and formatting. No VBA required."
+    />
+    <meta
+      name="twitter:image"
+      content="https://xlsvc.jsilverman.ca/og-image.png"
     />
 
     <style>
@@ -356,7 +439,7 @@
 
       /* Features */
       .features {
-        padding: 4rem 0;
+        padding: 3rem 0 4rem;
         background: var(--bg-white);
       }
 
@@ -516,6 +599,392 @@
         text-align: center;
       }
 
+      /* FAQ Section */
+      .faq {
+        padding: 4rem 0;
+        background: var(--bg-white);
+      }
+
+      .faq-list {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .faq-item {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        background: var(--bg-light);
+        border-radius: var(--radius);
+        border-left: 4px solid var(--primary);
+      }
+
+      .faq-item h3 {
+        font-size: 1.0625rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.75rem;
+      }
+
+      .faq-item p {
+        color: var(--text-light);
+        line-height: 1.6;
+        font-size: 0.9375rem;
+      }
+
+      /* CTA Section */
+      .cta-section {
+        padding: 4rem 0;
+        background: linear-gradient(
+          135deg,
+          var(--dark) 0%,
+          var(--dark-light) 100%
+        );
+        text-align: center;
+      }
+
+      .cta-section h2 {
+        color: white;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .cta-section p {
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 2rem;
+      }
+
+      .btn-disabled {
+        background: var(--gray);
+        color: rgba(255, 255, 255, 0.7);
+        cursor: not-allowed;
+        position: relative;
+      }
+
+      .btn-disabled:hover {
+        transform: none;
+        box-shadow: none;
+        background: var(--gray);
+      }
+
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tooltip .tooltip-text {
+        visibility: hidden;
+        width: 140px;
+        background-color: #fbbf24;
+        color: #1a1f36;
+        text-align: center;
+        border-radius: 8px;
+        padding: 8px 12px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -70px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.875rem;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .tooltip .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #fbbf24 transparent transparent transparent;
+      }
+
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* Stats Counter Section */
+      .stats {
+        padding: 3rem 0;
+        background: var(--bg-light);
+        border-bottom: 1px solid var(--light-gray);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        text-align: center;
+      }
+
+      .stat-item {
+        padding: 1.5rem;
+      }
+
+      .stat-number {
+        font-size: 2.75rem;
+        font-weight: 800;
+        color: var(--primary);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        font-size: 0.9375rem;
+        color: var(--text-light);
+        font-weight: 500;
+      }
+
+      /* Use Cases Section */
+      .use-cases {
+        padding: 4rem 0;
+        background: var(--bg-white);
+      }
+
+      .use-cases-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .use-case-card {
+        background: var(--bg-light);
+        padding: 1.75rem;
+        border-radius: var(--radius);
+        border-left: 4px solid var(--secondary);
+      }
+
+      .use-case-card h3 {
+        font-size: 1.0625rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.75rem;
+      }
+
+      .use-case-card p {
+        color: var(--text-light);
+        font-size: 0.9375rem;
+        line-height: 1.6;
+      }
+
+      .use-case-tag {
+        display: inline-block;
+        background: rgba(0, 166, 126, 0.1);
+        color: var(--secondary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      /* Comparison Table */
+      .comparison {
+        padding: 4rem 0;
+        background: var(--bg-light);
+      }
+
+      .comparison-table {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        border-collapse: collapse;
+        background: var(--bg-white);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        border-bottom: 1px solid var(--light-gray);
+      }
+
+      .comparison-table th {
+        background: var(--dark);
+        color: white;
+        font-weight: 600;
+        font-size: 0.9375rem;
+      }
+
+      .comparison-table th:first-child {
+        border-radius: var(--radius) 0 0 0;
+      }
+
+      .comparison-table th:last-child {
+        border-radius: 0 var(--radius) 0 0;
+      }
+
+      .comparison-table td {
+        font-size: 0.9375rem;
+        color: var(--text);
+      }
+
+      .comparison-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .comparison-table tr:hover td {
+        background: var(--bg-light);
+      }
+
+      .comparison-table td:first-child {
+        font-weight: 600;
+        color: var(--dark);
+      }
+
+      .check {
+        color: var(--success);
+        font-weight: bold;
+      }
+
+      .cross {
+        color: #e53e3e;
+      }
+
+      .partial {
+        color: var(--warning);
+      }
+
+      /* Email Capture Section */
+      .email-capture {
+        padding: 4rem 0;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        text-align: center;
+      }
+
+      .email-capture h2 {
+        color: white;
+        font-size: 1.875rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .email-capture p {
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 1.5rem;
+        font-size: 1.0625rem;
+      }
+
+      .email-form {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .email-form input[type="email"] {
+        flex: 1;
+        min-width: 250px;
+        padding: 1rem 1.25rem;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        font-size: 1rem;
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--dark);
+      }
+
+      .email-form input[type="email"]::placeholder {
+        color: var(--text-light);
+      }
+
+      .email-form input[type="email"]:focus {
+        outline: none;
+        border-color: white;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+      }
+
+      .email-form button {
+        padding: 1rem 2rem;
+        background: white;
+        color: var(--dark);
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .email-form button:hover {
+        background: var(--light-gray);
+        transform: translateY(-2px);
+      }
+
+      .email-note {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.8125rem;
+        margin-top: 1rem;
+      }
+
+      /* Trust Badges */
+      .trust-badges {
+        padding: 2.5rem 0;
+        background: var(--bg-white);
+        border-top: 1px solid var(--light-gray);
+      }
+
+      .badges-grid {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .badge-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-light);
+        font-size: 0.9375rem;
+      }
+
+      .badge-icon {
+        font-size: 1.5rem;
+      }
+
+      /* Testimonial placeholder */
+      .testimonial {
+        padding: 3rem 0;
+        background: var(--bg-light);
+      }
+
+      .testimonial-content {
+        max-width: 700px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .testimonial-quote {
+        font-size: 1.25rem;
+        font-style: italic;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 1.5rem;
+      }
+
+      .testimonial-author {
+        font-weight: 600;
+        color: var(--dark);
+      }
+
+      .testimonial-role {
+        color: var(--text-light);
+        font-size: 0.9375rem;
+      }
+
       footer p {
         font-size: 0.875rem;
       }
@@ -541,11 +1010,13 @@
         }
 
         nav {
-          gap: 1rem;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          justify-content: center;
         }
 
         nav a {
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
         }
 
         .problem-intro h2 {
@@ -563,6 +1034,65 @@
         .step::after {
           display: none;
         }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+        }
+
+        .stat-number {
+          font-size: 2rem;
+        }
+
+        .comparison-table {
+          font-size: 0.8125rem;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+          padding: 0.75rem 0.5rem;
+        }
+
+        .comparison-table th:first-child,
+        .comparison-table td:first-child {
+          position: sticky;
+          left: 0;
+          background: var(--bg-white);
+          z-index: 1;
+        }
+
+        .comparison {
+          overflow-x: auto;
+        }
+
+        .email-form {
+          flex-direction: column;
+        }
+
+        .email-form input[type="email"] {
+          min-width: 100%;
+        }
+
+        .badges-grid {
+          gap: 1.5rem;
+        }
+
+        .badge-item {
+          font-size: 0.8125rem;
+        }
+
+        .use-cases-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .email-capture h2 {
+          font-size: 1.5rem;
+        }
+
+        .cta-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
       }
     </style>
   </head>
@@ -574,7 +1104,8 @@
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
           <a href="https://github.com/jewseppi/xlsvc" target="_blank">GitHub</a>
-          <a href="/app" class="nav-cta">Launch App →</a>
+          <a href="#faq">FAQ</a>
+          <a href="/app" class="nav-cta">Login</a>
         </nav>
       </div>
     </header>
@@ -584,11 +1115,19 @@
         <div class="hero-content">
           <h1>Excel Batch <span class="highlight">Row Deletion</span></h1>
           <p>
-            Delete rows across all sheets at once. Set your filter, process 30+
-            sheets simultaneously. Images and formatting preserved.
+            Delete rows across all sheets at once. Set your filter, process
+            every worksheet simultaneously. Images and formatting preserved.
           </p>
           <div class="cta-buttons">
-            <a href="/app" class="btn btn-primary">Start Processing →</a>
+            <div class="tooltip">
+              <a
+                href="#"
+                class="btn btn-primary btn-disabled"
+                onclick="return false;"
+                >Launch App</a
+              >
+              <span class="tooltip-text">Coming Soon</span>
+            </div>
             <a
               href="https://github.com/jewseppi/xlsvc"
               class="btn btn-secondary"
@@ -608,6 +1147,74 @@
             Excel's AutoFilter works one sheet at a time. xlsvc processes them
             all at once and preserves images.
           </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-badge">Features</div>
+          <h2>Why Choose xlsvc</h2>
+          <p>
+            Purpose-built for batch Excel operations that other tools can't
+            handle
+          </p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🖼️</div>
+            <h3>Image Preservation</h3>
+            <p>
+              Unlike openpyxl or SheetJS, xlsvc keeps all embedded images intact
+              when deleting rows. Your product photos, logos, and charts stay
+              exactly where they belong.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Multi-Sheet Processing</h3>
+            <p>
+              Set your filter condition once and apply it across all sheets
+              simultaneously. No more repetitive clicking through each worksheet
+              manually.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🎨</div>
+            <h3>Formatting Preserved</h3>
+            <p>
+              Cell colors, borders, fonts, merged cells, and conditional
+              formatting all survive the deletion process. Your workbook looks
+              professional, not stripped.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📋</div>
+            <h3>Deletion Reports</h3>
+            <p>
+              Get a detailed audit of exactly which rows were removed from each
+              sheet. Perfect for compliance, record-keeping, or just peace of
+              mind.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Privacy-First</h3>
+            <p>
+              Your spreadsheets never leave your browser in Phase 0 mode. For
+              server processing, files are encrypted in transit and deleted
+              after processing.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Fast Processing</h3>
+            <p>
+              Powered by LibreOffice UNO API for server-side operations. Handles
+              large workbooks efficiently without timeouts or memory issues.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -648,6 +1255,92 @@
       </div>
     </section>
 
+    <section class="faq" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-badge">FAQ</div>
+          <h2>Frequently Asked Questions</h2>
+          <p>Common questions about batch Excel row deletion</p>
+        </div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <h3>
+              How do I delete the same rows from multiple Excel sheets at once?
+            </h3>
+            <p>
+              Upload your workbook to xlsvc, set your filter condition (e.g.,
+              "delete rows where columns F, G, H, I are all empty or zero"), and
+              click Process. The tool applies your filter across every sheet
+              simultaneously—no VBA macros or manual repetition required.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>Will my embedded images be preserved when deleting rows?</h3>
+            <p>
+              Yes. Unlike most Excel processing libraries (openpyxl, SheetJS,
+              pandas), xlsvc uses LibreOffice UNO API which properly handles
+              embedded images. Your product photos, charts, and logos remain
+              intact and correctly positioned after row deletion.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>What filter conditions can I use?</h3>
+            <p>
+              Currently, xlsvc supports filtering rows where specific columns
+              are empty, zero, or contain specific values. Custom conditions
+              (greater than, date ranges, text matching) are on the roadmap.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>Is my data secure?</h3>
+            <p>
+              Client-side processing keeps your data in your browser. For
+              server-side processing, files are encrypted during upload,
+              processed in isolated containers, and automatically deleted after
+              you download the result.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>Can I process .xls (legacy) and .xlsx files?</h3>
+            <p>
+              Yes, xlsvc supports both legacy .xls format and modern .xlsx/.xlsm
+              files. Output is always in .xlsx format to ensure compatibility
+              and preserve all features.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>What's the maximum file size?</h3>
+            <p>
+              Browser-based processing handles files up to ~50MB depending on
+              your device. Server-side processing supports larger files—contact
+              us for enterprise needs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="container">
+        <h2>Get Notified When We Launch</h2>
+        <p>Be the first to know when xlsvc is ready.</p>
+        <form
+          class="email-form"
+          id="notify-form"
+          onsubmit="return handleEmailSubmit(event)"
+        >
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            required
+          />
+          <button type="submit">Notify Me</button>
+        </form>
+        <p class="email-note">No spam. We'll only email when we launch.</p>
+      </div>
+    </section>
+
     <footer>
       <div class="container">
         <p>
@@ -658,5 +1351,67 @@
         </p>
       </div>
     </footer>
+
+    <script>
+      // Email form handler
+      async function handleEmailSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const email = form.email.value;
+        const button = form.querySelector("button");
+        const originalText = button.textContent;
+
+        button.textContent = "Subscribing...";
+        button.disabled = true;
+
+        try {
+          const response = await fetch(
+            "https://api.xlsvc.jsilverman.ca/api/subscribe",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email }),
+            }
+          );
+
+          if (response.ok) {
+            button.textContent = "Subscribed ✓";
+            button.style.background = "#00a67e";
+            form.email.value = "";
+            form.email.disabled = true;
+          } else {
+            const data = await response.json();
+            button.textContent = data.error || "Error";
+            button.style.background = "#e53e3e";
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.style.background = "";
+              button.disabled = false;
+            }, 2000);
+          }
+        } catch (err) {
+          button.textContent = "Error";
+          button.style.background = "#e53e3e";
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = "";
+            button.disabled = false;
+          }, 2000);
+        }
+
+        return false;
+      }
+
+      // Smooth scroll for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    </script>
   </body>
 </html>
