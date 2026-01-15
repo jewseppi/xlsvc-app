@@ -248,6 +248,62 @@ function AuthPage({ setUser }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [invitationToken, setInvitationToken] = useState(null);
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+  });
+
+  // Extract invitation token from URL query params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    const registerParam = urlParams.get("register");
+    
+    if (token && registerParam === "1") {
+      setInvitationToken(token);
+      setIsLogin(false);
+      
+      // Validate token and extract email
+      axios
+        .post(`${API_BASE}/validate-invitation`, { token })
+        .then((response) => {
+          if (response.data.valid) {
+            setEmail(response.data.email);
+          }
+        })
+        .catch((err) => {
+          setError(err.response?.data?.error || "Invalid invitation link");
+        });
+    }
+  }, []);
+
+  // Validate password strength
+  useEffect(() => {
+    if (!password) {
+      setPasswordRequirements({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false,
+      });
+      return;
+    }
+
+    setPasswordRequirements({
+      length: password.length >= 12,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    });
+  }, [password]);
+
+  const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -255,20 +311,46 @@ function AuthPage({ setUser }) {
     setError("");
 
     try {
-      const endpoint = isLogin ? "login" : "register";
-      const response = await axios.post(`${API_BASE}/${endpoint}`, {
-        email,
-        password,
-      });
+      if (invitationToken && !isLogin) {
+        // Registration with invitation token
+        if (!isPasswordValid) {
+          setError("Password does not meet all requirements");
+          setLoading(false);
+          return;
+        }
 
-      const { access_token } = response.data;
-      localStorage.setItem("token", access_token);
+        const response = await axios.post(`${API_BASE}/register`, {
+          invitation_token: invitationToken,
+          password,
+        });
 
-      const profileResponse = await axios.get(`${API_BASE}/profile`, {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
+        const { access_token } = response.data;
+        localStorage.setItem("token", access_token);
 
-      setUser(profileResponse.data);
+        const profileResponse = await axios.get(`${API_BASE}/profile`, {
+          headers: { Authorization: `Bearer ${access_token}` },
+        });
+
+        setUser(profileResponse.data);
+      } else if (isLogin) {
+        // Login
+        const response = await axios.post(`${API_BASE}/login`, {
+          email,
+          password,
+        });
+
+        const { access_token } = response.data;
+        localStorage.setItem("token", access_token);
+
+        const profileResponse = await axios.get(`${API_BASE}/profile`, {
+          headers: { Authorization: `Bearer ${access_token}` },
+        });
+
+        setUser(profileResponse.data);
+      } else {
+        setError("Registration requires an invitation link");
+        setLoading(false);
+      }
     } catch (err) {
       console.error("Auth error:", err);
       const errorMessage =
@@ -284,8 +366,21 @@ function AuthPage({ setUser }) {
       <AuthCard>
         <AuthTitle>Excel Processor</AuthTitle>
         <AuthSubtitle>
-          {isLogin ? "Sign in to your account" : "Create a new account"}
+          {invitationToken
+            ? "Create your account"
+            : isLogin
+            ? "Sign in to your account"
+            : "Registration requires an invitation"}
         </AuthSubtitle>
+
+        {!invitationToken && !isLogin && (
+          <div style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
+            <p>Registration is by invitation only.</p>
+            <p style={{ fontSize: "0.875rem", marginTop: "0.5rem" }}>
+              Please check your email for an invitation link.
+            </p>
+          </div>
+        )}
 
         <Form onSubmit={handleSubmit}>
           {error && <Alert>{error}</Alert>}
@@ -300,7 +395,13 @@ function AuthPage({ setUser }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              disabled={!!invitationToken}
             />
+            {invitationToken && (
+              <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                Email from invitation link
+              </p>
+            )}
           </FormGroup>
 
           <FormGroup>
@@ -314,23 +415,81 @@ function AuthPage({ setUser }) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
             />
+            {!isLogin && (
+              <div style={{ marginTop: "0.75rem", fontSize: "0.875rem" }}>
+                <div style={{ marginBottom: "0.5rem", fontWeight: 500 }}>
+                  Password Requirements:
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span>{passwordRequirements.length ? "✓" : "○"}</span>
+                    <span style={{ color: passwordRequirements.length ? "#10b981" : "#6b7280" }}>
+                      At least 12 characters
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span>{passwordRequirements.uppercase ? "✓" : "○"}</span>
+                    <span style={{ color: passwordRequirements.uppercase ? "#10b981" : "#6b7280" }}>
+                      One uppercase letter
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span>{passwordRequirements.lowercase ? "✓" : "○"}</span>
+                    <span style={{ color: passwordRequirements.lowercase ? "#10b981" : "#6b7280" }}>
+                      One lowercase letter
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span>{passwordRequirements.number ? "✓" : "○"}</span>
+                    <span style={{ color: passwordRequirements.number ? "#10b981" : "#6b7280" }}>
+                      One number
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span>{passwordRequirements.special ? "✓" : "○"}</span>
+                    <span style={{ color: passwordRequirements.special ? "#10b981" : "#6b7280" }}>
+                      One special character (!@#$%^&* etc.)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </FormGroup>
 
-          <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? "Processing..." : isLogin ? "Sign in" : "Sign up"}
-          </Button>
-
-          <CenterText>
+          {isLogin ? (
+            <>
+              <Button type="submit" variant="primary" disabled={loading}>
+                {loading ? "Processing..." : "Sign in"}
+              </Button>
+              <CenterText>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsLogin(false)}
+                >
+                  Don't have an account? Registration requires an invitation
+                </Button>
+              </CenterText>
+            </>
+          ) : invitationToken ? (
             <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsLogin(!isLogin)}
+              type="submit"
+              variant="primary"
+              disabled={loading || !isPasswordValid}
             >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+              {loading ? "Creating account..." : "Create account"}
             </Button>
-          </CenterText>
+          ) : (
+            <CenterText>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsLogin(true)}
+              >
+                Already have an account? Sign in
+              </Button>
+            </CenterText>
+          )}
         </Form>
       </AuthCard>
     </AuthContainer>
@@ -359,6 +518,163 @@ const testGitHub = async () => {
     );
   }
 };
+
+function AdminPanel({ apiBase }) {
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [invitationUrl, setInvitationUrl] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleGenerateInvitation = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    setInvitationUrl("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiBase}/admin/create-invitation`,
+        { email: inviteEmail },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setInvitationUrl(response.data.invitation_url);
+      setSuccessMessage(
+        `Invitation link generated for ${response.data.email}`
+      );
+      setInviteEmail("");
+    } catch (err) {
+      console.error("Error generating invitation:", err);
+      setErrorMessage(
+        err.response?.data?.error || err.message || "Failed to generate invitation"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyToClipboard = () => {
+    if (invitationUrl) {
+      navigator.clipboard.writeText(invitationUrl).then(() => {
+        setSuccessMessage("Invitation URL copied to clipboard!");
+        setTimeout(() => setSuccessMessage(""), 3000);
+      });
+    }
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleGenerateInvitation}>
+        <FormGroup>
+          <Label htmlFor="invite-email">Email Address</Label>
+          <Input
+            id="invite-email"
+            type="email"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            placeholder="Enter email address for invitation"
+            required
+            disabled={loading}
+          />
+        </FormGroup>
+
+        {errorMessage && (
+          <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
+            <Alert style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>
+              {errorMessage}
+            </Alert>
+          </div>
+        )}
+
+        {successMessage && !invitationUrl && (
+          <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
+            <Alert style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
+              {successMessage}
+            </Alert>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={loading || !inviteEmail}
+          style={{ width: "100%", marginTop: "0.5rem" }}
+        >
+          {loading ? "Generating..." : "Generate Invitation Link"}
+        </Button>
+      </form>
+
+      {invitationUrl && (
+        <div
+          style={{
+            marginTop: "1.5rem",
+            padding: "1rem",
+            backgroundColor: "#f0f9ff",
+            borderRadius: "8px",
+            border: "1px solid #bae6fd",
+          }}
+        >
+          <div style={{ marginBottom: "0.75rem", fontWeight: 500 }}>
+            Invitation Link:
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              alignItems: "flex-start",
+            }}
+          >
+            <Input
+              type="text"
+              value={invitationUrl}
+              readOnly
+              style={{
+                flex: 1,
+                fontSize: "0.875rem",
+                fontFamily: "monospace",
+                backgroundColor: "#fff",
+              }}
+            />
+            <Button
+              variant="secondary"
+              small
+              onClick={handleCopyToClipboard}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              📋 Copy
+            </Button>
+          </div>
+          {successMessage && (
+            <div
+              style={{
+                marginTop: "0.5rem",
+                fontSize: "0.875rem",
+                color: "#065f46",
+              }}
+            >
+              {successMessage}
+            </div>
+          )}
+          <div
+            style={{
+              marginTop: "0.75rem",
+              fontSize: "0.75rem",
+              color: "#6b7280",
+            }}
+          >
+            This link expires in 7 days. Copy and paste it into your email to
+            send to the user.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Dashboard({ user, logout }) {
   const [files, setFiles] = useState([]);
@@ -972,6 +1288,27 @@ function Dashboard({ user, logout }) {
       <MainContent>
         <DashboardGrid>
           <LeftColumn>
+            {user.is_admin && (
+              <ContentCard
+                style={{
+                  border: "2px solid #f59e0b",
+                  backgroundColor: "rgba(245, 158, 11, 0.05)",
+                }}
+              >
+                <CardHeader>
+                  <CardTitle>
+                    👑 Admin Panel
+                  </CardTitle>
+                  <CardSubtitle>
+                    Generate invitation links for new users
+                  </CardSubtitle>
+                </CardHeader>
+                <CardBody>
+                  <AdminPanel apiBase={API_BASE} />
+                </CardBody>
+              </ContentCard>
+            )}
+
             <ContentCard>
               <CardHeader>
                 <CardTitle>Upload Excel File</CardTitle>
@@ -1004,24 +1341,26 @@ function Dashboard({ user, logout }) {
                 <CardSubtitle>
                   Select a file to analyze for row deletion
                 </CardSubtitle>
-                {/* Add debug buttons for development */}
-                <div
-                  style={{
-                    marginTop: "0.5rem",
-                    display: "flex",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <Button variant="ghost" small onClick={cleanupMissingFiles}>
-                    🧹 Cleanup
-                  </Button>
-                  <Button variant="ghost" small onClick={debugStorage}>
-                    🔍 Debug
-                  </Button>
-                  <Button variant="ghost" small onClick={testGitHubDetailed}>
-                    🔗 Test GitHub
-                  </Button>
-                </div>
+                {/* Admin debug buttons - only visible to admin */}
+                {user.is_admin && (
+                  <div
+                    style={{
+                      marginTop: "0.5rem",
+                      display: "flex",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <Button variant="ghost" small onClick={cleanupMissingFiles}>
+                      🧹 Cleanup
+                    </Button>
+                    <Button variant="ghost" small onClick={debugStorage}>
+                      🔍 Debug
+                    </Button>
+                    <Button variant="ghost" small onClick={testGitHubDetailed}>
+                      🔗 Test GitHub
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
 
               {files.length === 0 ? (
