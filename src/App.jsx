@@ -525,6 +525,28 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
   const [invitationUrl, setInvitationUrl] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [invitations, setInvitations] = useState([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
+
+  // Load invitations on mount and after generating/expiring
+  useEffect(() => {
+    loadInvitations();
+  }, []);
+
+  const loadInvitations = async () => {
+    setLoadingInvitations(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${apiBase}/admin/invitations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setInvitations(response.data.invitations);
+    } catch (err) {
+      console.error("Error loading invitations:", err);
+    } finally {
+      setLoadingInvitations(false);
+    }
+  };
 
   const handleGenerateInvitation = async (e) => {
     e.preventDefault();
@@ -548,6 +570,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
         `Invitation link generated for ${response.data.email}`
       );
       setInviteEmail("");
+      loadInvitations(); // Refresh list
     } catch (err) {
       console.error("Error generating invitation:", err);
       setErrorMessage(
@@ -555,6 +578,31 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExpireInvitation = async (invitationId, email) => {
+    if (!confirm(`Revoke invitation for ${email}?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${apiBase}/admin/invitations/${invitationId}/expire`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setSuccessMessage(`Invitation for ${email} has been revoked`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+      loadInvitations(); // Refresh list
+    } catch (err) {
+      console.error("Error expiring invitation:", err);
+      setErrorMessage(
+        err.response?.data?.error || err.message || "Failed to revoke invitation"
+      );
     }
   };
 
@@ -573,6 +621,8 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
       });
     }
   };
+
+  const pendingInvitations = invitations.filter((inv) => inv.status === "pending");
 
   return (
     <div>
@@ -594,15 +644,23 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
 
           {errorMessage && (
             <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
-              <Alert style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>
+              <Alert style={{ backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.3)" }}>
                 {errorMessage}
               </Alert>
             </div>
           )}
 
-          {successMessage && !invitationUrl && (
+          {successMessage && !invitationUrl && !successMessage.includes("revoked") && (
             <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
-              <Alert style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
+              <Alert style={{ backgroundColor: "rgba(16, 185, 129, 0.2)", color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)" }}>
+                {successMessage}
+              </Alert>
+            </div>
+          )}
+
+          {successMessage && successMessage.includes("revoked") && (
+            <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
+              <Alert style={{ backgroundColor: "rgba(16, 185, 129, 0.2)", color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)" }}>
                 {successMessage}
               </Alert>
             </div>
@@ -623,12 +681,12 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
             style={{
               marginTop: "1.5rem",
               padding: "1.25rem",
-              backgroundColor: "#f0f9ff",
+              backgroundColor: "rgba(59, 130, 246, 0.1)",
               borderRadius: "8px",
-              border: "2px solid #bae6fd",
+              border: "2px solid rgba(59, 130, 246, 0.3)",
             }}
           >
-            <div style={{ marginBottom: "1rem", fontWeight: 600, fontSize: "0.95rem" }}>
+            <div style={{ marginBottom: "1rem", fontWeight: 600, fontSize: "0.95rem", color: "#ffffff" }}>
               Invitation Link:
             </div>
             <div
@@ -646,13 +704,14 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
                   padding: "0.75rem",
                   fontSize: "0.9rem",
                   fontFamily: "monospace",
-                  backgroundColor: "#fff",
-                  border: "1px solid #d1d5db",
+                  backgroundColor: "#1e1e22",
+                  border: "1px solid #2a2a2f",
                   borderRadius: "6px",
-                  minHeight: "60px",
+                  minHeight: "80px",
                   resize: "vertical",
                   lineHeight: "1.5",
-                  color: "#111827",
+                  color: "#ffffff",
+                  wordBreak: "break-all",
                 }}
                 onClick={(e) => e.target.select()}
               />
@@ -669,7 +728,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
                 style={{
                   marginTop: "0.75rem",
                   fontSize: "0.875rem",
-                  color: "#065f46",
+                  color: "#10b981",
                   fontWeight: 500,
                 }}
               >
@@ -681,7 +740,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
                 style={{
                   marginTop: "0.75rem",
                   fontSize: "0.875rem",
-                  color: "#065f46",
+                  color: "#10b981",
                 }}
               >
                 {successMessage}
@@ -691,11 +750,67 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
               style={{
                 marginTop: "0.75rem",
                 fontSize: "0.75rem",
-                color: "#6b7280",
+                color: "#8b8b92",
               }}
             >
               This link expires in 7 days. Copy and paste it into your email to send to the user.
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Pending Invitations Section */}
+      <div style={{ marginBottom: "2rem" }}>
+        <div style={{ marginBottom: "0.75rem", fontWeight: 600, fontSize: "0.95rem", color: "#ffffff" }}>
+          Pending Invitations:
+        </div>
+        {loadingInvitations ? (
+          <div style={{ color: "#8b8b92", fontSize: "0.875rem" }}>Loading...</div>
+        ) : pendingInvitations.length === 0 ? (
+          <div style={{ color: "#8b8b92", fontSize: "0.875rem" }}>No pending invitations</div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+            }}
+          >
+            {pendingInvitations.map((inv) => {
+              const expiresAt = new Date(inv.expires_at);
+              const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
+              return (
+                <div
+                  key={inv.id}
+                  style={{
+                    padding: "0.75rem",
+                    backgroundColor: "rgba(59, 130, 246, 0.1)",
+                    border: "1px solid rgba(59, 130, 246, 0.3)",
+                    borderRadius: "6px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "#ffffff", fontWeight: 500, fontSize: "0.9rem" }}>
+                      {inv.email}
+                    </div>
+                    <div style={{ color: "#8b8b92", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                      Expires in {daysLeft} day{daysLeft !== 1 ? "s" : ""} • Created {new Date(inv.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    small
+                    onClick={() => handleExpireInvitation(inv.id, inv.email)}
+                    style={{ whiteSpace: "nowrap", marginLeft: "0.5rem" }}
+                  >
+                    Revoke
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -707,7 +822,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
           borderTop: "1px solid rgba(255, 255, 255, 0.1)",
         }}
       >
-        <div style={{ marginBottom: "0.75rem", fontWeight: 600, fontSize: "0.95rem" }}>
+        <div style={{ marginBottom: "0.75rem", fontWeight: 600, fontSize: "0.95rem", color: "#ffffff" }}>
           Admin Tools:
         </div>
         <div
