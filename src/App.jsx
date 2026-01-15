@@ -519,7 +519,7 @@ const testGitHub = async () => {
   }
 };
 
-function AdminPanel({ apiBase }) {
+function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [invitationUrl, setInvitationUrl] = useState("");
@@ -561,117 +561,173 @@ function AdminPanel({ apiBase }) {
   const handleCopyToClipboard = () => {
     if (invitationUrl) {
       navigator.clipboard.writeText(invitationUrl).then(() => {
+        const prevMessage = successMessage;
         setSuccessMessage("Invitation URL copied to clipboard!");
-        setTimeout(() => setSuccessMessage(""), 3000);
+        setTimeout(() => {
+          if (prevMessage && prevMessage.includes("generated")) {
+            setSuccessMessage(prevMessage);
+          } else {
+            setSuccessMessage("");
+          }
+        }, 3000);
       });
     }
   };
 
   return (
     <div>
-      <form onSubmit={handleGenerateInvitation}>
-        <FormGroup>
-          <Label htmlFor="invite-email">Email Address</Label>
-          <Input
-            id="invite-email"
-            type="email"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder="Enter email address for invitation"
-            required
-            disabled={loading}
-          />
-        </FormGroup>
-
-        {errorMessage && (
-          <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
-            <Alert style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>
-              {errorMessage}
-            </Alert>
-          </div>
-        )}
-
-        {successMessage && !invitationUrl && (
-          <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
-            <Alert style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
-              {successMessage}
-            </Alert>
-          </div>
-        )}
-
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={loading || !inviteEmail}
-          style={{ width: "100%", marginTop: "0.5rem" }}
-        >
-          {loading ? "Generating..." : "Generate Invitation Link"}
-        </Button>
-      </form>
-
-      {invitationUrl && (
-        <div
-          style={{
-            marginTop: "1.5rem",
-            padding: "1rem",
-            backgroundColor: "#f0f9ff",
-            borderRadius: "8px",
-            border: "1px solid #bae6fd",
-          }}
-        >
-          <div style={{ marginBottom: "0.75rem", fontWeight: 500 }}>
-            Invitation Link:
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "flex-start",
-            }}
-          >
+      {/* Invitation Generator Section */}
+      <div style={{ marginBottom: "2rem" }}>
+        <form onSubmit={handleGenerateInvitation}>
+          <FormGroup>
+            <Label htmlFor="invite-email">Email Address</Label>
             <Input
-              type="text"
-              value={invitationUrl}
-              readOnly
-              style={{
-                flex: 1,
-                fontSize: "0.875rem",
-                fontFamily: "monospace",
-                backgroundColor: "#fff",
-              }}
+              id="invite-email"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Enter email address for invitation"
+              required
+              disabled={loading}
             />
-            <Button
-              variant="secondary"
-              small
-              onClick={handleCopyToClipboard}
-              style={{ whiteSpace: "nowrap" }}
-            >
-              📋 Copy
-            </Button>
-          </div>
-          {successMessage && (
-            <div
-              style={{
-                marginTop: "0.5rem",
-                fontSize: "0.875rem",
-                color: "#065f46",
-              }}
-            >
-              {successMessage}
+          </FormGroup>
+
+          {errorMessage && (
+            <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
+              <Alert style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>
+                {errorMessage}
+              </Alert>
             </div>
           )}
+
+          {successMessage && !invitationUrl && (
+            <div style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}>
+              <Alert style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
+                {successMessage}
+              </Alert>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={loading || !inviteEmail}
+            style={{ width: "100%", marginTop: "0.5rem" }}
+          >
+            {loading ? "Generating..." : "Generate Invitation Link"}
+          </Button>
+        </form>
+
+        {invitationUrl && (
           <div
             style={{
-              marginTop: "0.75rem",
-              fontSize: "0.75rem",
-              color: "#6b7280",
+              marginTop: "1.5rem",
+              padding: "1.25rem",
+              backgroundColor: "#f0f9ff",
+              borderRadius: "8px",
+              border: "2px solid #bae6fd",
             }}
           >
-            This link expires in 7 days. Copy and paste it into your email to
-            send to the user.
+            <div style={{ marginBottom: "1rem", fontWeight: 600, fontSize: "0.95rem" }}>
+              Invitation Link:
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
+              <textarea
+                value={invitationUrl}
+                readOnly
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  fontSize: "0.9rem",
+                  fontFamily: "monospace",
+                  backgroundColor: "#fff",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  minHeight: "60px",
+                  resize: "vertical",
+                  lineHeight: "1.5",
+                  color: "#111827",
+                }}
+                onClick={(e) => e.target.select()}
+              />
+              <Button
+                variant="secondary"
+                onClick={handleCopyToClipboard}
+                style={{ width: "100%" }}
+              >
+                📋 Copy to Clipboard
+              </Button>
+            </div>
+            {successMessage && successMessage.includes("copied") && (
+              <div
+                style={{
+                  marginTop: "0.75rem",
+                  fontSize: "0.875rem",
+                  color: "#065f46",
+                  fontWeight: 500,
+                }}
+              >
+                {successMessage}
+              </div>
+            )}
+            {successMessage && successMessage.includes("generated") && (
+              <div
+                style={{
+                  marginTop: "0.75rem",
+                  fontSize: "0.875rem",
+                  color: "#065f46",
+                }}
+              >
+                {successMessage}
+              </div>
+            )}
+            <div
+              style={{
+                marginTop: "0.75rem",
+                fontSize: "0.75rem",
+                color: "#6b7280",
+              }}
+            >
+              This link expires in 7 days. Copy and paste it into your email to send to the user.
+            </div>
           </div>
+        )}
+      </div>
+
+      {/* Admin Tools Section */}
+      <div
+        style={{
+          paddingTop: "1.5rem",
+          borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+        }}
+      >
+        <div style={{ marginBottom: "0.75rem", fontWeight: 600, fontSize: "0.95rem" }}>
+          Admin Tools:
         </div>
-      )}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <Button variant="ghost" small onClick={onCleanup} style={{ justifyContent: "flex-start" }}>
+            🧹 Cleanup Missing Files
+          </Button>
+          <Button variant="ghost" small onClick={onDebug} style={{ justifyContent: "flex-start" }}>
+            🔍 Debug Storage
+          </Button>
+          <Button variant="ghost" small onClick={onTestGitHub} style={{ justifyContent: "flex-start" }}>
+            🔗 Test GitHub Connection
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1288,27 +1344,6 @@ function Dashboard({ user, logout }) {
       <MainContent>
         <DashboardGrid>
           <LeftColumn>
-            {user.is_admin && (
-              <ContentCard
-                style={{
-                  border: "2px solid #f59e0b",
-                  backgroundColor: "rgba(245, 158, 11, 0.05)",
-                }}
-              >
-                <CardHeader>
-                  <CardTitle>
-                    👑 Admin Panel
-                  </CardTitle>
-                  <CardSubtitle>
-                    Generate invitation links for new users
-                  </CardSubtitle>
-                </CardHeader>
-                <CardBody>
-                  <AdminPanel apiBase={API_BASE} />
-                </CardBody>
-              </ContentCard>
-            )}
-
             <ContentCard>
               <CardHeader>
                 <CardTitle>Upload Excel File</CardTitle>
@@ -1341,26 +1376,6 @@ function Dashboard({ user, logout }) {
                 <CardSubtitle>
                   Select a file to analyze for row deletion
                 </CardSubtitle>
-                {/* Admin debug buttons - only visible to admin */}
-                {user.is_admin && (
-                  <div
-                    style={{
-                      marginTop: "0.5rem",
-                      display: "flex",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <Button variant="ghost" small onClick={cleanupMissingFiles}>
-                      🧹 Cleanup
-                    </Button>
-                    <Button variant="ghost" small onClick={debugStorage}>
-                      🔍 Debug
-                    </Button>
-                    <Button variant="ghost" small onClick={testGitHubDetailed}>
-                      🔗 Test GitHub
-                    </Button>
-                  </div>
-                )}
               </CardHeader>
 
               {files.length === 0 ? (
@@ -1446,6 +1461,32 @@ function Dashboard({ user, logout }) {
                   </CardBody>
                 </ContentCard>
               </>
+            )}
+
+            {user.is_admin && (
+              <ContentCard
+                style={{
+                  border: "2px solid #f59e0b",
+                  backgroundColor: "rgba(245, 158, 11, 0.05)",
+                }}
+              >
+                <CardHeader>
+                  <CardTitle>
+                    👑 Admin Panel
+                  </CardTitle>
+                  <CardSubtitle>
+                    Generate invitation links and admin tools
+                  </CardSubtitle>
+                </CardHeader>
+                <CardBody>
+                  <AdminPanel
+                    apiBase={API_BASE}
+                    onCleanup={cleanupMissingFiles}
+                    onDebug={debugStorage}
+                    onTestGitHub={testGitHubDetailed}
+                  />
+                </CardBody>
+              </ContentCard>
             )}
           </LeftColumn>
 
