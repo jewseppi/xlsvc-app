@@ -1671,20 +1671,6 @@ function Dashboard({ user, logout }) {
                       >
                         📥 Download Processed File
                       </Button>
-                      {item.report_file_id && (
-                        <Button
-                          variant="secondary"
-                          onClick={() =>
-                            onDownload(
-                              item.report_file_id,
-                              `DeletionReport_${item.processed_filename}`
-                            )
-                          }
-                          style={{ width: "100%" }}
-                        >
-                          📊 View Deleted Rows
-                        </Button>
-                      )}
                       <div
                         style={{
                           marginTop: "1rem",
