@@ -1684,7 +1684,7 @@ function Dashboard({ user, logout }) {
                           }
                           style={{ width: "100%", marginTop: "0.5rem" }}
                         >
-                          📊 Download Deletion Report
+                          📊 View Deleted Rows
                         </Button>
                       )}
                       <div
