@@ -1005,6 +1005,8 @@ function Dashboard({ user, logout }) {
             jobId: jobId,
             downloadFileId: status.download_file_id,
             downloadFilename: status.download_filename,
+            reportFileId: status.report_file_id,
+            reportFilename: status.report_filename,
           });
         } else if (status.status === "failed") {
           setJobStatus("failed");
@@ -1671,6 +1673,20 @@ function Dashboard({ user, logout }) {
                       >
                         📥 Download Processed File
                       </Button>
+                      {processedFile.reportFileId && (
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            handleDownload(
+                              processedFile.reportFileId,
+                              processedFile.reportFilename
+                            )
+                          }
+                          style={{ width: "100%", marginTop: "0.5rem" }}
+                        >
+                          📊 Download Deletion Report
+                        </Button>
+                      )}
                       <div
                         style={{
                           marginTop: "1rem",
