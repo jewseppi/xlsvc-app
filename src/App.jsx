@@ -497,7 +497,7 @@ const testGitHub = async () => {
   }
 };
 
-function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
+function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [invitationUrl, setInvitationUrl] = useState("");
@@ -505,10 +505,14 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [invitations, setInvitations] = useState([]);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { user, details }
 
-  // Load invitations on mount and after generating/expiring
+  // Load invitations and users on mount
   useEffect(() => {
     loadInvitations();
+    loadUsers();
   }, []);
 
   const loadInvitations = async () => {
@@ -597,6 +601,55 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
           }
         }, 3000);
       });
+    }
+  };
+
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${apiBase}/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(response.data.users);
+    } catch (err) {
+      console.error("Error loading users:", err);
+      setErrorMessage(err.response?.data?.error || "Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    // Fetch user details for confirmation
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${apiBase}/admin/users/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDeleteConfirm({ user, details: response.data });
+    } catch (err) {
+      console.error("Error fetching user details:", err);
+      setErrorMessage(err.response?.data?.error || "Failed to load user details");
+    }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${apiBase}/admin/users/${deleteConfirm.user.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSuccessMessage(`User ${deleteConfirm.user.email} has been deleted`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+      setDeleteConfirm(null);
+      loadUsers(); // Refresh list
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      setErrorMessage(err.response?.data?.error || "Failed to delete user");
+      setDeleteConfirm(null);
     }
   };
 
@@ -792,6 +845,153 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub }) {
           </div>
         )}
       </div>
+
+      {/* User Management Section */}
+      <div
+        style={{
+          marginBottom: "2rem",
+          paddingTop: "1.5rem",
+          borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+        }}
+      >
+        <div style={{ marginBottom: "0.75rem", fontWeight: 600, fontSize: "0.95rem", color: "#ffffff" }}>
+          User Management:
+        </div>
+        {loadingUsers ? (
+          <div style={{ color: "#8b8b92", fontSize: "0.875rem" }}>Loading users...</div>
+        ) : users.length === 0 ? (
+          <div style={{ color: "#8b8b92", fontSize: "0.875rem" }}>No users found</div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+            }}
+          >
+            {users.map((user) => {
+              const createdDate = new Date(user.created_at);
+              return (
+                <div
+                  key={user.id}
+                  style={{
+                    padding: "0.75rem",
+                    backgroundColor: "rgba(139, 92, 246, 0.1)",
+                    border: "1px solid rgba(139, 92, 246, 0.3)",
+                    borderRadius: "6px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <div style={{ color: "#ffffff", fontWeight: 500, fontSize: "0.9rem" }}>
+                        {user.email}
+                      </div>
+                      {user.is_admin && (
+                        <span
+                          style={{
+                            padding: "0.125rem 0.5rem",
+                            backgroundColor: "rgba(245, 158, 11, 0.2)",
+                            color: "#f59e0b",
+                            borderRadius: "4px",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                          }}
+                        >
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ color: "#8b8b92", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                      Created {createdDate.toLocaleDateString()} • {user.file_count} file{user.file_count !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                  {currentUser && currentUser.email === user.email ? (
+                    <span style={{ color: "#8b8b92", fontSize: "0.75rem" }}>Current user</span>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      small
+                      onClick={() => handleDeleteUser(user)}
+                      style={{ whiteSpace: "nowrap", marginLeft: "0.5rem", color: "#ef4444" }}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "#1e1e22",
+              border: "2px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              maxWidth: "500px",
+              width: "90%",
+              boxShadow: "0 10px 40px rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ marginBottom: "1rem", fontSize: "1.1rem", fontWeight: 600, color: "#ef4444" }}>
+              ⚠️ Delete User
+            </div>
+            <div style={{ marginBottom: "1rem", color: "#ffffff" }}>
+              Are you sure you want to delete <strong>{deleteConfirm.user.email}</strong>?
+            </div>
+            <div style={{ marginBottom: "1rem", padding: "0.75rem", backgroundColor: "rgba(239, 68, 68, 0.1)", borderRadius: "6px" }}>
+              <div style={{ color: "#ef4444", fontSize: "0.875rem", marginBottom: "0.5rem" }}>
+                This will permanently delete:
+              </div>
+              <ul style={{ color: "#ffffff", fontSize: "0.875rem", margin: 0, paddingLeft: "1.25rem" }}>
+                <li>{deleteConfirm.details.file_count} file{deleteConfirm.details.file_count !== 1 ? "s" : ""}</li>
+                <li>{deleteConfirm.details.job_count} processing job{deleteConfirm.details.job_count !== 1 ? "s" : ""}</li>
+                <li>All invitation tokens created by this user</li>
+                <li>The user account</li>
+              </ul>
+            </div>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <Button
+                variant="ghost"
+                onClick={() => setDeleteConfirm(null)}
+                style={{ color: "#ffffff" }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={confirmDeleteUser}
+                style={{ backgroundColor: "#ef4444", borderColor: "#ef4444" }}
+              >
+                Delete User
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Admin Tools Section */}
       <div
@@ -1572,6 +1772,7 @@ function Dashboard({ user, logout }) {
                     onCleanup={cleanupMissingFiles}
                     onDebug={debugStorage}
                     onTestGitHub={testGitHubDetailed}
+                    currentUser={user}
                   />
                 </CardBody>
               </ContentCard>
