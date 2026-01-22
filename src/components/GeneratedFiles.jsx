@@ -62,6 +62,7 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
     macros: [],
     instructions: [],
     reports: [],
+    processed: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -95,7 +96,8 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
   const hasFiles =
     files.macros.length > 0 ||
     files.instructions.length > 0 ||
-    files.reports.length > 0;
+    files.reports.length > 0 ||
+    files.processed.length > 0;
 
   if (!hasFiles) {
     return (
@@ -158,6 +160,26 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
               </FileName>
               <Button
                 variant="secondary"
+                small
+                onClick={() => onDownload(file.id, file.original_filename)}
+              >
+                Download
+              </Button>
+            </FileItem>
+          ))}
+        </FileTypeSection>
+      )}
+
+      {files.processed.length > 0 && (
+        <FileTypeSection>
+          <SectionTitle>📥 Processed Files</SectionTitle>
+          {files.processed.map((file) => (
+            <FileItem key={file.id}>
+              <FileName title={file.original_filename}>
+                {file.original_filename}
+              </FileName>
+              <Button
+                variant="primary"
                 small
                 onClick={() => onDownload(file.id, file.original_filename)}
               >
