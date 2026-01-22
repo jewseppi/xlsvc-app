@@ -155,28 +155,6 @@ function ErrorFallback({error, resetErrorBoundary}) {
   );
 }
 
-// Processing Overlay Component
-const ProcessingOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  color: white;
-  font-size: 1.125rem;
-  text-align: center;
-
-  div {
-    margin: 0.5rem 0;
-  }
-`;
-
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1437,13 +1415,6 @@ function Dashboard({ user, logout }) {
 
   return (
     <>
-      {jobStatus === "processing" && (
-        <ProcessingOverlay>
-          <div>🔄 Processing via GitHub Actions...</div>
-          <div>This may take 2-3 minutes</div>
-          <div>Please keep this page open</div>
-        </ProcessingOverlay>
-      )}
       <DashboardHeader>
         <HeaderContent>
           <DashboardTitle>Excel Processor</DashboardTitle>
