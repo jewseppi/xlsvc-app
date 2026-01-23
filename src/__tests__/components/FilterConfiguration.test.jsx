@@ -32,8 +32,8 @@ describe('FilterConfiguration', () => {
     )
 
     // Check that both filter rules are rendered
-    expect(screen.getByLabelText(/column/i)).toBeInTheDocument()
-    expect(screen.getAllByLabelText(/column/i)).toHaveLength(2)
+    const columnInputs = screen.getAllByLabelText(/column/i)
+    expect(columnInputs).toHaveLength(2)
   })
 
   it('allows adding a new filter rule', () => {
@@ -47,7 +47,8 @@ describe('FilterConfiguration', () => {
     const addButton = screen.getByText(/add filter rule/i)
     fireEvent.click(addButton)
 
-    expect(mockSetFilterRules).toHaveBeenCalledWith([
+    // Check the last call to setFilterRules (the component may call it multiple times)
+    expect(mockSetFilterRules).toHaveBeenLastCalledWith([
       ...defaultFilterRules,
       { column: 'A', value: '0' }
     ])
@@ -64,7 +65,8 @@ describe('FilterConfiguration', () => {
     const removeButtons = screen.getAllByLabelText(/remove filter rule/i)
     fireEvent.click(removeButtons[0])
 
-    expect(mockSetFilterRules).toHaveBeenCalledWith([defaultFilterRules[1]])
+    // Check the last call to setFilterRules (the component may call it multiple times)
+    expect(mockSetFilterRules).toHaveBeenLastCalledWith([defaultFilterRules[1]])
   })
 
   it('allows updating column value', () => {
@@ -78,7 +80,8 @@ describe('FilterConfiguration', () => {
     const columnInputs = screen.getAllByLabelText(/column/i)
     fireEvent.change(columnInputs[0], { target: { value: 'H' } })
 
-    expect(mockSetFilterRules).toHaveBeenCalledWith([
+    // Check the last call to setFilterRules (the component may call it multiple times)
+    expect(mockSetFilterRules).toHaveBeenLastCalledWith([
       { column: 'H', value: '0' },
       defaultFilterRules[1]
     ])
@@ -95,7 +98,8 @@ describe('FilterConfiguration', () => {
     const valueInputs = screen.getAllByLabelText(/value to match/i)
     fireEvent.change(valueInputs[0], { target: { value: '1' } })
 
-    expect(mockSetFilterRules).toHaveBeenCalledWith([
+    // Check the last call to setFilterRules (the component may call it multiple times)
+    expect(mockSetFilterRules).toHaveBeenLastCalledWith([
       { column: 'F', value: '1' },
       defaultFilterRules[1]
     ])

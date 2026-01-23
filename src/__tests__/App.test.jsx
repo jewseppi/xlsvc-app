@@ -3,7 +3,6 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
 import App from '../App'
 
 // Mock axios
@@ -22,19 +21,11 @@ describe('App', () => {
   })
 
   it('renders without crashing', () => {
-    render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    )
+    render(<App />)
   })
 
   it('shows loading state initially', () => {
-    render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    )
+    render(<App />)
     // The app should render something (either loading or content)
     expect(document.body).toBeTruthy()
   })
