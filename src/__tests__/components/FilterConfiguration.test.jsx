@@ -10,7 +10,8 @@ import { theme } from '../../styled/theme'
 describe('FilterConfiguration', () => {
   let mockSetFilterRules
 
-  const defaultFilterRules = [
+  // Create a function that returns fresh filter rules to avoid mutation issues
+  const getDefaultFilterRules = () => [
     { column: 'F', value: '0' },
     { column: 'G', value: '0' }
   ]
@@ -28,9 +29,10 @@ describe('FilterConfiguration', () => {
   }
 
   it('renders filter rules', () => {
+    const filterRules = getDefaultFilterRules()
     renderWithTheme(
       <FilterConfiguration
-        filterRules={defaultFilterRules}
+        filterRules={filterRules}
         setFilterRules={mockSetFilterRules}
       />
     )
@@ -41,9 +43,10 @@ describe('FilterConfiguration', () => {
   })
 
   it('allows adding a new filter rule', () => {
+    const filterRules = getDefaultFilterRules()
     renderWithTheme(
       <FilterConfiguration
-        filterRules={defaultFilterRules}
+        filterRules={filterRules}
         setFilterRules={mockSetFilterRules}
       />
     )
@@ -59,15 +62,16 @@ describe('FilterConfiguration', () => {
     expect(mockSetFilterRules).toHaveBeenCalled()
     const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
     expect(lastCall[0]).toEqual([
-      ...defaultFilterRules,
+      ...filterRules,
       { column: 'A', value: '0' }
     ])
   })
 
   it('allows removing a filter rule', () => {
+    const filterRules = getDefaultFilterRules()
     renderWithTheme(
       <FilterConfiguration
-        filterRules={defaultFilterRules}
+        filterRules={filterRules}
         setFilterRules={mockSetFilterRules}
       />
     )
@@ -82,13 +86,14 @@ describe('FilterConfiguration', () => {
     // Check that setFilterRules was called with the rule removed
     expect(mockSetFilterRules).toHaveBeenCalled()
     const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
-    expect(lastCall[0]).toEqual([defaultFilterRules[1]])
+    expect(lastCall[0]).toEqual([filterRules[1]])
   })
 
   it('allows updating column value', () => {
+    const filterRules = getDefaultFilterRules()
     renderWithTheme(
       <FilterConfiguration
-        filterRules={defaultFilterRules}
+        filterRules={filterRules}
         setFilterRules={mockSetFilterRules}
       />
     )
@@ -105,14 +110,15 @@ describe('FilterConfiguration', () => {
     const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
     expect(lastCall[0]).toEqual([
       { column: 'H', value: '0' },
-      defaultFilterRules[1]
+      filterRules[1]
     ])
   })
 
   it('allows updating value field', () => {
+    const filterRules = getDefaultFilterRules()
     renderWithTheme(
       <FilterConfiguration
-        filterRules={defaultFilterRules}
+        filterRules={filterRules}
         setFilterRules={mockSetFilterRules}
       />
     )
@@ -129,7 +135,7 @@ describe('FilterConfiguration', () => {
     const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
     expect(lastCall[0]).toEqual([
       { column: 'F', value: '1' },
-      defaultFilterRules[1]
+      filterRules[1]
     ])
   })
 })
