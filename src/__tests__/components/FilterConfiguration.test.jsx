@@ -1,19 +1,23 @@
 /**
  * Unit tests for FilterConfiguration component
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ThemeProvider } from 'styled-components'
 import FilterConfiguration from '../../components/FilterConfiguration'
 import { theme } from '../../styled/theme'
 
 describe('FilterConfiguration', () => {
-  const mockSetFilterRules = vi.fn()
+  let mockSetFilterRules
 
   const defaultFilterRules = [
     { column: 'F', value: '0' },
     { column: 'G', value: '0' }
   ]
+
+  beforeEach(() => {
+    mockSetFilterRules = vi.fn()
+  })
 
   const renderWithTheme = (component) => {
     return render(
@@ -45,10 +49,16 @@ describe('FilterConfiguration', () => {
     )
 
     const addButton = screen.getByText(/add filter rule/i)
+    
+    // Clear any previous calls from render
+    mockSetFilterRules.mockClear()
+    
     fireEvent.click(addButton)
 
-    // Check the last call to setFilterRules (the component may call it multiple times)
-    expect(mockSetFilterRules).toHaveBeenLastCalledWith([
+    // Check that setFilterRules was called with the new rule added
+    expect(mockSetFilterRules).toHaveBeenCalled()
+    const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+    expect(lastCall[0]).toEqual([
       ...defaultFilterRules,
       { column: 'A', value: '0' }
     ])
@@ -63,10 +73,16 @@ describe('FilterConfiguration', () => {
     )
 
     const removeButtons = screen.getAllByLabelText(/remove filter rule/i)
+    
+    // Clear any previous calls from render
+    mockSetFilterRules.mockClear()
+    
     fireEvent.click(removeButtons[0])
 
-    // Check the last call to setFilterRules (the component may call it multiple times)
-    expect(mockSetFilterRules).toHaveBeenLastCalledWith([defaultFilterRules[1]])
+    // Check that setFilterRules was called with the rule removed
+    expect(mockSetFilterRules).toHaveBeenCalled()
+    const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+    expect(lastCall[0]).toEqual([defaultFilterRules[1]])
   })
 
   it('allows updating column value', () => {
@@ -78,10 +94,16 @@ describe('FilterConfiguration', () => {
     )
 
     const columnInputs = screen.getAllByLabelText(/column/i)
+    
+    // Clear any previous calls from render
+    mockSetFilterRules.mockClear()
+    
     fireEvent.change(columnInputs[0], { target: { value: 'H' } })
 
-    // Check the last call to setFilterRules (the component may call it multiple times)
-    expect(mockSetFilterRules).toHaveBeenLastCalledWith([
+    // Check that setFilterRules was called with the updated column
+    expect(mockSetFilterRules).toHaveBeenCalled()
+    const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+    expect(lastCall[0]).toEqual([
       { column: 'H', value: '0' },
       defaultFilterRules[1]
     ])
@@ -96,10 +118,16 @@ describe('FilterConfiguration', () => {
     )
 
     const valueInputs = screen.getAllByLabelText(/value to match/i)
+    
+    // Clear any previous calls from render
+    mockSetFilterRules.mockClear()
+    
     fireEvent.change(valueInputs[0], { target: { value: '1' } })
 
-    // Check the last call to setFilterRules (the component may call it multiple times)
-    expect(mockSetFilterRules).toHaveBeenLastCalledWith([
+    // Check that setFilterRules was called with the updated value
+    expect(mockSetFilterRules).toHaveBeenCalled()
+    const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+    expect(lastCall[0]).toEqual([
       { column: 'F', value: '1' },
       defaultFilterRules[1]
     ])
