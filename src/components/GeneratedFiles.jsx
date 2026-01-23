@@ -112,7 +112,7 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
     <FilesContainer>
       {files.macros.length > 0 && (
         <FileTypeSection>
-          <SectionTitle>🖥️ LibreOffice Macros</SectionTitle>
+          <SectionTitle>🖥️ Macros</SectionTitle>
           {files.macros.map((file) => (
             <FileItem key={file.id}>
               <FileName title={file.original_filename}>

@@ -99,6 +99,7 @@ function ProcessingHistory({
   onDownload,
   history,
   setHistory,
+  isAdmin = false,
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -140,6 +141,44 @@ function ProcessingHistory({
     });
   };
 
+  const handleDeleteItem = async (jobId) => {
+    if (!confirm("Are you sure you want to delete this history item?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${apiBase}/files/${fileId}/history/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Remove from local state
+      setHistory(history.filter((item) => item.job_id !== jobId));
+    } catch (err) {
+      console.error("Error deleting history item:", err);
+      alert("Failed to delete history item: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (!confirm("Are you sure you want to clear all processing history for this file?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.delete(`${apiBase}/files/${fileId}/history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setHistory([]);
+      alert(`Cleared ${response.data.deleted_count} history items`);
+    } catch (err) {
+      console.error("Error clearing history:", err);
+      alert("Failed to clear history: " + (err.response?.data?.error || err.message));
+    }
+  };
+
   if (loading) {
     return (
       <HistoryContainer>
@@ -168,17 +207,48 @@ function ProcessingHistory({
 
   return (
     <HistoryContainer>
+      {isAdmin && history.length > 0 && (
+        <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "flex-end" }}>
+          <Button
+            variant="ghost"
+            small
+            onClick={handleClearHistory}
+            style={{ color: "#ef4444" }}
+          >
+            🗑️ Clear All History
+          </Button>
+        </div>
+      )}
       {history.map((item) => (
         <HistoryItem key={item.job_id}>
           <HistoryHeader>
             <HistoryDate>📅 {formatDate(item.processed_at)}</HistoryDate>
-            <StatusBadge status={item.status}>
-              {item.status === "completed"
-                ? "✅ Completed"
-                : item.status === "failed"
-                ? "❌ Failed"
-                : "⏳ Processing"}
-            </StatusBadge>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <StatusBadge status={item.status}>
+                {item.status === "completed"
+                  ? "✅ Completed"
+                  : item.status === "failed"
+                  ? "❌ Failed"
+                  : "⏳ Processing"}
+              </StatusBadge>
+              <button
+                onClick={() => handleDeleteItem(item.job_id)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#ef4444",
+                  cursor: "pointer",
+                  padding: "0.25rem 0.5rem",
+                  fontSize: "0.875rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                }}
+                title="Delete this history item"
+              >
+                🗑️
+              </button>
+            </div>
           </HistoryHeader>
 
           <HistoryDetails>

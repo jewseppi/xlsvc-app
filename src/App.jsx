@@ -1208,6 +1208,12 @@ function Dashboard({ user, logout }) {
             reportFileId: status.report_file_id,
             reportFilename: status.report_filename,
           });
+          
+          // Refresh generated files and file list after processing completes
+          if (selectedFile) {
+            loadGeneratedFiles(selectedFile.id);
+          }
+          loadFiles();
         } else if (status.status === "failed") {
           setJobStatus("failed");
           setProcessingLog((prev) => [
@@ -1485,7 +1491,7 @@ function Dashboard({ user, logout }) {
             marginTop: "1rem",
           }}
         >
-          {/* LibreOffice Macro Option */}
+          {/* Macro Option */}
           <div
             style={{
               padding: "1rem",
@@ -1495,7 +1501,7 @@ function Dashboard({ user, logout }) {
             }}
           >
             <h5 style={{ color: "#6366f1", marginBottom: "0.5rem" }}>
-              🖥️ LibreOffice Macro
+              🖥️ Macro
             </h5>
             <p style={{ fontSize: "0.875rem", marginBottom: "1rem" }}>
               Automated deletion - recommended for most users
@@ -1690,7 +1696,7 @@ function Dashboard({ user, logout }) {
                             <FileMeta>
                               {formatFileSize(file.file_size)} • Uploaded{" "}
                               {new Date(file.upload_date).toLocaleDateString()}
-                              {file.processed && " • Analyzed"}
+                              {file.processed ? " • Analyzed" : ""}
                             </FileMeta>
                           </FileDetails>
                         </FileInfo>
@@ -1700,11 +1706,11 @@ function Dashboard({ user, logout }) {
                               Selected
                             </Badge>
                           )}
-                          {file.processed && selectedFile?.id !== file.id && (
+                          {file.processed && selectedFile?.id !== file.id ? (
                             <Badge style={{ backgroundColor: "#10b981" }}>
                               Analyzed
                             </Badge>
-                          )}
+                          ) : null}
                         </div>
                       </FileItem>
                     ))}
@@ -1729,6 +1735,7 @@ function Dashboard({ user, logout }) {
                       onDownload={handleDownload}
                       history={processingHistory}
                       setHistory={setProcessingHistory}
+                      isAdmin={user.is_admin}
                     />
                   </CardBody>
                 </ContentCard>
@@ -1925,7 +1932,7 @@ function Dashboard({ user, logout }) {
                             marginTop: "1rem",
                           }}
                         >
-                          {/* LibreOffice Macro */}
+                          {/* Macro */}
                           <div
                             style={{
                               padding: "1rem",
@@ -1940,7 +1947,7 @@ function Dashboard({ user, logout }) {
                                 marginBottom: "0.5rem",
                               }}
                             >
-                              LibreOffice Macro (Recommended)
+                              Macro (Recommended)
                             </h5>
                             <p
                               style={{
@@ -2060,8 +2067,8 @@ function Dashboard({ user, logout }) {
                       </DownloadSection>
                     )}
 
-                  {/* Show when no rows need deletion */}
-                  {processedFile && !processedFile.hasRowsToDelete && (
+                  {/* Show when no rows need deletion (only for manual processing) */}
+                  {processedFile && !processedFile.isAutomated && !processedFile.hasRowsToDelete && (
                     <div
                       style={{
                         padding: "1rem",
