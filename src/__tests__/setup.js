@@ -12,6 +12,10 @@ expect.extend(matchers)
 // Cleanup after each test
 afterEach(() => {
   cleanup()
+  // Clear localStorage after each test
+  if (global.localStorage && global.localStorage.clear) {
+    global.localStorage.clear()
+  }
 })
 
 // Mock window.matchMedia
@@ -29,14 +33,26 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+// Use actual localStorage but clear it before each test
+// The afterEach cleanup will handle clearing
+if (!global.localStorage) {
+  const localStorageMock = {
+    store: {},
+    getItem: function(key) {
+      return this.store[key] || null
+    },
+    setItem: function(key, value) {
+      this.store[key] = value.toString()
+    },
+    removeItem: function(key) {
+      delete this.store[key]
+    },
+    clear: function() {
+      this.store = {}
+    }
+  }
+  global.localStorage = localStorageMock
 }
-global.localStorage = localStorageMock
 
 // Mock fetch if needed
 global.fetch = vi.fn()
