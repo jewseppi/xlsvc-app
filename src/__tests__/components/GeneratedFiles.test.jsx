@@ -9,18 +9,6 @@ import { theme } from '../../styled/theme'
 import axios from 'axios'
 
 vi.mock('axios')
-vi.mock('../../styled/theme', () => ({
-  theme: {
-    spacing: { xs: '0.25rem', sm: '0.5rem', md: '1rem', lg: '1.5rem', xl: '2rem' },
-    colors: {
-      background: { primary: '#fff', secondary: '#f5f5f5' },
-      text: { primary: '#000', secondary: '#666' },
-      border: { primary: '#ddd', secondary: '#aaa' },
-      accent: { primary: '#007bff' }
-    },
-    borderRadius: { md: '4px', lg: '8px' }
-  }
-}))
 
 describe('GeneratedFiles', () => {
   const mockOnDownload = vi.fn()
@@ -77,9 +65,10 @@ describe('GeneratedFiles', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/macros/i)).toBeInTheDocument()
-      expect(screen.getByText('macro1.bas')).toBeInTheDocument()
-      expect(screen.getByText('macro2.bas')).toBeInTheDocument()
     })
+
+    expect(screen.getByText('macro1.bas')).toBeInTheDocument()
+    expect(screen.getByText('macro2.bas')).toBeInTheDocument()
 
     expect(axios.get).toHaveBeenCalledWith(
       `${apiBase}/files/1/generated`,
@@ -107,9 +96,10 @@ describe('GeneratedFiles', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/instructions/i)).toBeInTheDocument()
-      expect(screen.getByText('instructions1.txt')).toBeInTheDocument()
-      expect(screen.getByText('instructions2.txt')).toBeInTheDocument()
     })
+
+    expect(screen.getByText('instructions1.txt')).toBeInTheDocument()
+    expect(screen.getByText('instructions2.txt')).toBeInTheDocument()
   })
 
   it('loads and displays report files', async () => {
@@ -131,8 +121,9 @@ describe('GeneratedFiles', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/deletion reports/i)).toBeInTheDocument()
-      expect(screen.getByText('report1.json')).toBeInTheDocument()
     })
+
+    expect(screen.getByText('report1.json')).toBeInTheDocument()
   })
 
   it('loads and displays processed files', async () => {
@@ -154,8 +145,9 @@ describe('GeneratedFiles', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/processed files/i)).toBeInTheDocument()
-      expect(screen.getByText('processed1.xlsx')).toBeInTheDocument()
     })
+
+    expect(screen.getByText('processed1.xlsx')).toBeInTheDocument()
   })
 
   it('calls onDownload when download button is clicked', async () => {
@@ -174,10 +166,12 @@ describe('GeneratedFiles', () => {
     )
 
     await waitFor(() => {
-      const downloadButton = screen.getByText('Download')
-      downloadButton.click()
-      expect(mockOnDownload).toHaveBeenCalledWith(1, 'macro1.bas')
+      expect(screen.getByText('Download')).toBeInTheDocument()
     })
+
+    const downloadButton = screen.getByText('Download')
+    downloadButton.click()
+    expect(mockOnDownload).toHaveBeenCalledWith(1, 'macro1.bas')
   })
 
   it('does not load files when fileId is not provided', () => {

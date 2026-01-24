@@ -9,19 +9,6 @@ import { theme } from '../../styled/theme'
 import axios from 'axios'
 
 vi.mock('axios')
-vi.mock('../../styled/theme', () => ({
-  theme: {
-    spacing: { xs: '0.25rem', sm: '0.5rem', md: '1rem', lg: '1.5rem', xl: '2rem' },
-    colors: {
-      background: { primary: '#fff', secondary: '#f5f5f5' },
-      text: { primary: '#000', secondary: '#666' },
-      border: { primary: '#ddd', secondary: '#aaa' },
-      accent: { primary: '#007bff' }
-    },
-    borderRadius: { md: '4px', lg: '8px' },
-    transitions: { normal: '0.2s' }
-  }
-}))
 
 describe('ProcessingHistory', () => {
   const mockOnDownload = vi.fn()
@@ -88,7 +75,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -104,8 +91,9 @@ describe('ProcessingHistory', () => {
       expect(mockSetHistory).toHaveBeenCalledWith(mockHistory)
     })
 
-    // Rerender with history prop
-    rerender(
+    // Component will re-render when setHistory is called, but we need to manually update
+    // Since the component uses internal state, we need to test with history prop directly
+    const { rerender } = render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -119,8 +107,9 @@ describe('ProcessingHistory', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
-      expect(screen.getByText('5')).toBeInTheDocument()
     })
+
+    expect(screen.getByText('5')).toBeInTheDocument()
   })
 
   it('displays completed status badge', async () => {
@@ -134,23 +123,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -177,23 +150,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -207,8 +164,9 @@ describe('ProcessingHistory', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/failed/i)).toBeInTheDocument()
-      expect(screen.getByText(/processing failed/i)).toBeInTheDocument()
     })
+
+    expect(screen.getByText(/processing failed/i)).toBeInTheDocument()
   })
 
   it('displays processing status badge', async () => {
@@ -221,23 +179,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -269,23 +211,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -299,9 +225,10 @@ describe('ProcessingHistory', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/filters applied/i)).toBeInTheDocument()
-      expect(screen.getByText("F = '0'")).toBeInTheDocument()
-      expect(screen.getByText("G = '0'")).toBeInTheDocument()
     })
+
+    expect(screen.getByText("F = '0'")).toBeInTheDocument()
+    expect(screen.getByText("G = '0'")).toBeInTheDocument()
   })
 
   it('shows "File was clean" message when deleted_rows is 0', async () => {
@@ -315,23 +242,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -361,23 +272,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -390,10 +285,12 @@ describe('ProcessingHistory', () => {
     )
 
     await waitFor(() => {
-      const downloadButton = screen.getByText(/download processed file/i)
-      fireEvent.click(downloadButton)
-      expect(mockOnDownload).toHaveBeenCalledWith(10, 'processed.xlsx')
+      expect(screen.getByText(/download processed file/i)).toBeInTheDocument()
     })
+
+    const downloadButton = screen.getByText(/download processed file/i)
+    fireEvent.click(downloadButton)
+    expect(mockOnDownload).toHaveBeenCalledWith(10, 'processed.xlsx')
   })
 
   it('shows clear history button for admin users', async () => {
@@ -407,24 +304,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-          isAdmin={true}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
@@ -453,24 +333,7 @@ describe('ProcessingHistory', () => {
     ]
     axios.get.mockResolvedValue({ data: { history: mockHistory } })
     
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <ProcessingHistory 
-          fileId={1} 
-          apiBase={apiBase} 
-          onDownload={mockOnDownload}
-          history={[]}
-          setHistory={mockSetHistory}
-          isAdmin={false}
-        />
-      </ThemeProvider>
-    )
-
-    await waitFor(() => {
-      expect(mockSetHistory).toHaveBeenCalled()
-    })
-
-    rerender(
+    render(
       <ThemeProvider theme={theme}>
         <ProcessingHistory 
           fileId={1} 
