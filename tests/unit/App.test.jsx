@@ -6,8 +6,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from 'styled-components'
-import App from '../App'
-import { theme } from '../styled/theme'
+import App from '../../src/App'
+import { theme } from '../../src/styled/theme'
 import axios from 'axios'
 
 vi.mock('axios')

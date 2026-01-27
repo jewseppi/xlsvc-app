@@ -4,8 +4,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import { ThemeProvider } from 'styled-components'
-import GeneratedFiles from '../../components/GeneratedFiles'
-import { theme } from '../../styled/theme'
+import GeneratedFiles from '../../../src/components/GeneratedFiles'
+import { theme } from '../../../src/styled/theme'
 import axios from 'axios'
 
 vi.mock('axios')

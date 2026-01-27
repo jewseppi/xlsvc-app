@@ -4,8 +4,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { ThemeProvider } from 'styled-components'
-import ProcessingHistory from '../../components/ProcessingHistory'
-import { theme } from '../../styled/theme'
+import ProcessingHistory from '../../../src/components/ProcessingHistory'
+import { theme } from '../../../src/styled/theme'
 import axios from 'axios'
 
 vi.mock('axios')

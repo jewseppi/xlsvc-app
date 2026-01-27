@@ -4,8 +4,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ThemeProvider } from 'styled-components'
-import FilterConfiguration from '../../components/FilterConfiguration'
-import { theme } from '../../styled/theme'
+import FilterConfiguration from '../../../src/components/FilterConfiguration'
+import { theme } from '../../../src/styled/theme'
 
 describe('FilterConfiguration', () => {
   let mockSetFilterRules

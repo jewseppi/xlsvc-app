@@ -13,7 +13,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
-        'src/__tests__/',
+        'tests/',
         '**/*.config.js',
         '**/*.config.ts',
         '**/dist/',
@@ -28,7 +28,7 @@ export default defineConfig({
         statements: 70
       }
     },
-    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    include: ['tests/unit/**/*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: ['node_modules', 'dist', '.git', '.github']
   },
   resolve: {
