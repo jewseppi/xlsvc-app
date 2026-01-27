@@ -320,5 +320,83 @@ describe('FilterConfiguration', () => {
       const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
       expect(lastCall[0][0].column).toBe(longValue.toUpperCase())
     })
+
+    it('handles numeric column values', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.change(columnInputs[0], { target: { value: '26' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].column).toBe('26')
+    })
+
+    it('handles mixed case column values', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.change(columnInputs[0], { target: { value: 'aBc' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].column).toBe('ABC')
+    })
+
+    it('renders info box with instructions', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      expect(screen.getByText('How it works')).toBeInTheDocument()
+      expect(screen.getByText(/Rows will be deleted/i)).toBeInTheDocument()
+    })
+
+    it('handles updating multiple rules in sequence', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      const valueInputs = screen.getAllByLabelText(/value to match/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      // Update first rule
+      fireEvent.change(columnInputs[0], { target: { value: 'H' } })
+      fireEvent.change(valueInputs[0], { target: { value: '1' } })
+      
+      // Update second rule
+      fireEvent.change(columnInputs[1], { target: { value: 'I' } })
+      fireEvent.change(valueInputs[1], { target: { value: '2' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalledTimes(4)
+    })
   })
 })

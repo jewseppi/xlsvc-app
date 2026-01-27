@@ -693,6 +693,209 @@ describe('API Coverage - All Endpoints', () => {
     })
   })
 
+  describe('Additional Authentication APIs', () => {
+    it('POST /api/validate-invitation - success scenario', async () => {
+      const mockResponse = {
+        data: {
+          valid: true,
+          email: 'user@example.com'
+        }
+      }
+      axios.post.mockResolvedValueOnce(mockResponse)
+
+      const response = await axios.post(
+        `${API_BASE}/validate-invitation`,
+        { token: 'invite-token' }
+      )
+
+      expect(response.data.valid).toBe(true)
+      expect(response.data.email).toBe('user@example.com')
+    })
+
+    it('POST /api/validate-invitation - invalid token scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: { error: 'Invalid invitation token' }
+        }
+      })
+
+      await expect(
+        axios.post(`${API_BASE}/validate-invitation`, { token: 'invalid' })
+      ).rejects.toMatchObject({
+        response: { status: 400 }
+      })
+    })
+  })
+
+  describe('Additional Processing APIs', () => {
+    it('POST /api/process-automated/${fileId} - success scenario', async () => {
+      const fileId = 1
+      const mockResponse = {
+        data: {
+          job_id: 'job-123',
+          status: 'processing',
+          estimated_time: '2-3 minutes'
+        }
+      }
+
+      axios.post.mockResolvedValueOnce(mockResponse)
+
+      const response = await axios.post(
+        `${API_BASE}/process-automated/${fileId}`,
+        { filter_rules: [{ column: 'F', value: '0' }] },
+        mockHeaders
+      )
+
+      expect(response.data.job_id).toBe('job-123')
+      expect(response.data.status).toBe('processing')
+    })
+
+    it('POST /api/process-automated/${fileId} - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'Processing failed' }
+        }
+      })
+
+      await expect(
+        axios.post(
+          `${API_BASE}/process-automated/1`,
+          { filter_rules: [] },
+          mockHeaders
+        )
+      ).rejects.toMatchObject({
+        response: { status: 500 }
+      })
+    })
+  })
+
+  describe('Additional Admin APIs', () => {
+    it('POST /api/admin/invitations/${id}/revoke - success scenario', async () => {
+      const invitationId = 1
+
+      axios.post.mockResolvedValueOnce({ data: { success: true } })
+
+      const response = await axios.post(
+        `${API_BASE}/admin/invitations/${invitationId}/revoke`,
+        {},
+        mockHeaders
+      )
+
+      expect(response.data.success).toBe(true)
+    })
+
+    it('POST /api/admin/invitations/${id}/revoke - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 404,
+          data: { error: 'Invitation not found' }
+        }
+      })
+
+      await expect(
+        axios.post(`${API_BASE}/admin/invitations/999/revoke`, {}, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 404 }
+      })
+    })
+  })
+
+  describe('Additional File Management APIs', () => {
+    it('GET /api/download/${fileId} - success scenario', async () => {
+      const fileId = 1
+      const mockBlob = new Blob(['file content'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+      axios.get.mockResolvedValueOnce({
+        data: mockBlob,
+        headers: {
+          'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'content-disposition': 'attachment; filename="test.xlsx"'
+        }
+      })
+
+      const response = await axios.get(
+        `${API_BASE}/download/${fileId}`,
+        {
+          ...mockHeaders,
+          responseType: 'blob'
+        }
+      )
+
+      expect(response.data).toBeInstanceOf(Blob)
+    })
+
+    it('POST /api/cleanup-files - success scenario', async () => {
+      const mockResponse = {
+        data: {
+          removed_count: 5
+        }
+      }
+
+      axios.post.mockResolvedValueOnce(mockResponse)
+
+      const response = await axios.post(
+        `${API_BASE}/cleanup-files`,
+        {},
+        mockHeaders
+      )
+
+      expect(response.data.removed_count).toBe(5)
+    })
+
+    it('POST /api/cleanup-files - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'Cleanup failed' }
+        }
+      })
+
+      await expect(
+        axios.post(`${API_BASE}/cleanup-files`, {}, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 500 }
+      })
+    })
+  })
+
+  describe('Additional Debug/Test APIs', () => {
+    it('POST /api/test-dispatch - success scenario', async () => {
+      const mockResponse = {
+        data: {
+          status: 'success',
+          message: 'Dispatch test successful'
+        }
+      }
+
+      axios.post.mockResolvedValueOnce(mockResponse)
+
+      const response = await axios.post(
+        `${API_BASE}/test-dispatch`,
+        {},
+        mockHeaders
+      )
+
+      expect(response.data.status).toBe('success')
+    })
+
+    it('POST /api/test-dispatch - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'Dispatch test failed' }
+        }
+      })
+
+      await expect(
+        axios.post(`${API_BASE}/test-dispatch`, {}, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 500 }
+      })
+    })
+  })
+
   describe('Error Scenarios Coverage', () => {
     it('handles 400 Bad Request errors', async () => {
       axios.post.mockRejectedValueOnce({

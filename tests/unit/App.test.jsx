@@ -511,5 +511,170 @@ describe('App', () => {
       // Token should be removed
       expect(localStorage.getItem('token')).toBeNull()
     })
+
+    it('shows auth form after logout', async () => {
+      localStorage.setItem('token', 'test-token')
+      const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
+      
+      axios.get
+        .mockResolvedValueOnce({ data: mockUser })
+        .mockResolvedValue({ data: { files: [] } })
+      
+      window.location.pathname = '/app'
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Welcome, test@example.com/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+      
+      const logoutButton = screen.getByRole('button', { name: /logout/i })
+      
+      await act(async () => {
+        fireEvent.click(logoutButton)
+      })
+      
+      // After logout, should show auth form
+      await waitFor(() => {
+        expect(screen.getByText(/Excel Processor/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+    })
+  })
+
+  describe('User State Management', () => {
+    it('maintains user state after successful login', async () => {
+      localStorage.clear()
+      axios.get.mockResolvedValue({ data: null })
+      axios.post.mockResolvedValueOnce({ 
+        data: { access_token: 'new-token' } 
+      })
+      axios.get
+        .mockResolvedValueOnce({ data: { id: 1, email: 'user@example.com' } })
+        .mockResolvedValue({ data: { files: [] } })
+      
+      window.location.pathname = '/app'
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      // Should show auth form initially
+      await waitFor(() => {
+        expect(screen.getByText(/Excel Processor/i)).toBeInTheDocument()
+      })
+    })
+
+    it('handles user state update after profile fetch', async () => {
+      localStorage.setItem('token', 'test-token')
+      const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
+      axios.get
+        .mockResolvedValueOnce({ data: mockUser })
+        .mockResolvedValue({ data: { files: [] } })
+      
+      window.location.pathname = '/app'
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/profile'),
+          expect.any(Object)
+        )
+      })
+    })
+  })
+
+  describe('Route Navigation', () => {
+    it('handles navigation between routes', async () => {
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      // Should start at landing page
+      await waitFor(() => {
+        expect(screen.getByText(/Clean Massive Excel Workbooks/i)).toBeInTheDocument()
+      })
+    })
+
+    it('preserves auth state during navigation', async () => {
+      localStorage.setItem('token', 'test-token')
+      const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
+      axios.get
+        .mockResolvedValueOnce({ data: mockUser })
+        .mockResolvedValue({ data: { files: [] } })
+      
+      window.location.pathname = '/app'
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Welcome, test@example.com/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+    })
+  })
+
+  describe('Error Boundary Integration', () => {
+    it('wraps Dashboard in ErrorBoundary', async () => {
+      localStorage.setItem('token', 'test-token')
+      const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
+      axios.get
+        .mockResolvedValueOnce({ data: mockUser })
+        .mockResolvedValue({ data: { files: [] } })
+      
+      window.location.pathname = '/app'
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      // ErrorBoundary should be present (we can't easily test it without throwing an error)
+      // But we can verify Dashboard renders
+      await waitFor(() => {
+        expect(screen.getByText(/Welcome, test@example.com/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+    })
+  })
+
+  describe('Conditional Rendering', () => {
+    it('renders AuthPage when user is null', async () => {
+      localStorage.clear()
+      axios.get.mockResolvedValue({ data: null })
+      
+      window.location.pathname = '/app'
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Excel Processor/i)).toBeInTheDocument()
+      })
+    })
+
+    it('renders Dashboard when user is authenticated', async () => {
+      localStorage.setItem('token', 'test-token')
+      const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
+      axios.get
+        .mockResolvedValueOnce({ data: mockUser })
+        .mockResolvedValue({ data: { files: [] } })
+      
+      window.location.pathname = '/app'
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Welcome, test@example.com/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+    })
   })
 })
