@@ -98,7 +98,10 @@ describe('AuthPage', () => {
       const user = userEvent.setup()
       
       axios.post.mockResolvedValueOnce({ data: { access_token: 'new-token-123' } })
+      // Mock profile fetch
       axios.get.mockResolvedValueOnce({ data: { id: 1, email: 'test@example.com', is_admin: false } })
+      // Mock files fetch (called after successful login)
+      axios.get.mockResolvedValueOnce({ data: { files: [] } })
       
       await act(async () => {
         render(<App />)

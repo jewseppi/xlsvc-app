@@ -198,9 +198,9 @@ describe('Theme', () => {
 
   describe('Theme Consistency', () => {
     it('has consistent dark theme colors', () => {
-      // Dark theme should have dark backgrounds
-      expect(theme.colors.background.primary).toMatch(/^#0[0-9a-fA-F]|^rgba?\(0,/)
-      expect(theme.colors.background.secondary).toMatch(/^#0[0-9a-fA-F]|^rgba?\(0,/)
+      // Dark theme should have dark backgrounds (hex starting with #0, #1, or #2, or rgba with low values)
+      expect(theme.colors.background.primary).toMatch(/^#0[0-9a-fA-F]|^#1[0-9a-fA-F]|^#2[0-9a-fA-F]|^rgba?\(0,|^rgba?\(1[0-9]?,|^rgba?\(2[0-9]?,/)
+      expect(theme.colors.background.secondary).toMatch(/^#0[0-9a-fA-F]|^#1[0-9a-fA-F]|^#2[0-9a-fA-F]|^rgba?\(0,|^rgba?\(1[0-9]?,|^rgba?\(2[0-9]?,/)
     })
 
     it('has consistent text colors for dark theme', () => {

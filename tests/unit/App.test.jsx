@@ -273,7 +273,10 @@ describe('App', () => {
       // The ErrorBoundary is around Dashboard, so we need a logged-in user at /app
       localStorage.setItem('token', 'test-token')
       const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
-      axios.get.mockResolvedValue({ data: mockUser })
+      // Mock profile fetch
+      axios.get.mockResolvedValueOnce({ data: mockUser })
+      // Mock files fetch (Dashboard needs this to avoid undefined error)
+      axios.get.mockResolvedValueOnce({ data: { files: [] } })
       
       // Navigate to /app route
       window.location.pathname = '/app'
@@ -292,7 +295,10 @@ describe('App', () => {
       // ErrorBoundary should show error message
       localStorage.setItem('token', 'test-token')
       const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
-      axios.get.mockResolvedValue({ data: mockUser })
+      // Mock profile fetch
+      axios.get.mockResolvedValueOnce({ data: mockUser })
+      // Mock files fetch (Dashboard needs this to avoid undefined error)
+      axios.get.mockResolvedValueOnce({ data: { files: [] } })
       
       window.location.pathname = '/app'
       
@@ -310,7 +316,10 @@ describe('App', () => {
       // ErrorBoundary should have a "Try again" button
       localStorage.setItem('token', 'test-token')
       const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
-      axios.get.mockResolvedValue({ data: mockUser })
+      // Mock profile fetch
+      axios.get.mockResolvedValueOnce({ data: mockUser })
+      // Mock files fetch (Dashboard needs this to avoid undefined error)
+      axios.get.mockResolvedValueOnce({ data: { files: [] } })
       
       window.location.pathname = '/app'
       

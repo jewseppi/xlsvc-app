@@ -728,8 +728,12 @@ describe('ProcessingHistory', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/completed/i)).toBeInTheDocument()
-        expect(screen.getByText(/failed/i)).toBeInTheDocument()
-        expect(screen.getByText(/processing/i)).toBeInTheDocument()
+        // Use getAllByText since "failed" appears multiple times (badge and error message)
+        const failedElements = screen.getAllByText(/failed/i)
+        expect(failedElements.length).toBeGreaterThan(0)
+        // Use getAllByText for "processing" as well since it might appear multiple times
+        const processingElements = screen.getAllByText(/processing/i)
+        expect(processingElements.length).toBeGreaterThan(0)
       })
     })
   })

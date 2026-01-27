@@ -784,23 +784,19 @@ describe('API Coverage - All Endpoints', () => {
     })
 
     it('handles request cancellation', async () => {
-      const cancelToken = axios.CancelToken.source()
+      // Simulate a cancelled request error (axios cancellation format)
+      const cancellationError = {
+        message: 'Request cancelled',
+        __CANCEL__: true
+      }
 
-      axios.get.mockImplementation(() => {
-        cancelToken.cancel('Request cancelled')
-        return Promise.reject({
-          message: 'Request cancelled',
-          __CANCEL__: true
-        })
-      })
+      axios.get.mockRejectedValueOnce(cancellationError)
 
       await expect(
-        axios.get(`${API_BASE}/files`, {
-          ...mockHeaders,
-          cancelToken: cancelToken.token
-        })
+        axios.get(`${API_BASE}/files`, mockHeaders)
       ).rejects.toMatchObject({
-        __CANCEL__: true
+        __CANCEL__: true,
+        message: 'Request cancelled'
       })
     })
   })
