@@ -27,10 +27,10 @@ export default defineConfig({
         '**/*.spec.{js,jsx,ts,tsx}'
       ],
       thresholds: {
-        lines: 70,
-        functions: 70,
-        branches: 70,
-        statements: 70
+        lines: 100,
+        functions: 100,
+        branches: 100,
+        statements: 100
       }
     },
     include: ['tests/unit/**/*.{test,spec}.{js,jsx,ts,tsx}'],

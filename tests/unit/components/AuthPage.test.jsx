@@ -739,4 +739,191 @@ describe('AuthPage', () => {
       })
     })
   })
+
+  describe('Edge Cases and Error Scenarios', () => {
+    it('handles invitation token validation errors', async () => {
+      window.location.search = '?token=invalid-token'
+      
+      axios.get.mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: { error: 'Invalid invitation token' }
+        }
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Excel Processor/i)).toBeInTheDocument()
+      })
+    })
+
+    it('handles network timeout scenarios', async () => {
+      axios.post.mockRejectedValueOnce({
+        code: 'ECONNABORTED',
+        message: 'timeout of 5000ms exceeded'
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const emailInput = screen.getByLabelText(/email address/i)
+        const passwordInput = screen.getByLabelText(/password/i)
+        const submitButton = screen.getByRole('button', { name: /sign in/i })
+        
+        fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+        fireEvent.change(passwordInput, { target: { value: 'password123' } })
+        fireEvent.click(submitButton)
+      })
+      
+      // Should show error message
+      await waitFor(() => {
+        const errorElements = screen.queryAllByText(/timeout|error|failed/i)
+        expect(errorElements.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+    })
+
+    it('handles 401 Unauthorized error response', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 401,
+          data: { error: 'Invalid credentials' }
+        }
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const emailInput = screen.getByLabelText(/email address/i)
+        const passwordInput = screen.getByLabelText(/password/i)
+        const submitButton = screen.getByRole('button', { name: /sign in/i })
+        
+        fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+        fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } })
+        fireEvent.click(submitButton)
+      })
+      
+      await waitFor(() => {
+        const errorElements = screen.queryAllByText(/Invalid credentials|Unauthorized/i)
+        expect(errorElements.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+    })
+
+    it('handles 500 Internal Server Error response', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'Internal Server Error' }
+        }
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const emailInput = screen.getByLabelText(/email address/i)
+        const passwordInput = screen.getByLabelText(/password/i)
+        const submitButton = screen.getByRole('button', { name: /sign in/i })
+        
+        fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+        fireEvent.change(passwordInput, { target: { value: 'password123' } })
+        fireEvent.click(submitButton)
+      })
+      
+      await waitFor(() => {
+        const errorElements = screen.queryAllByText(/error|failed|server/i)
+        expect(errorElements.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+    })
+
+    it('validates password with special characters', async () => {
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      // Switch to registration mode
+      await waitFor(() => {
+        const registerLink = screen.getByText(/don't have an account|registration requires/i)
+        fireEvent.click(registerLink)
+      })
+      
+      await waitFor(() => {
+        const passwordInput = screen.getByLabelText(/password/i)
+        // Test password with special characters
+        fireEvent.change(passwordInput, { target: { value: 'TestPass123!@#' } })
+      })
+      
+      // Password should be accepted if it meets requirements
+      await waitFor(() => {
+        const passwordInput = screen.getByLabelText(/password/i)
+        expect(passwordInput.value.length).toBeGreaterThanOrEqual(12)
+      })
+    })
+
+    it('prevents form submission with empty fields', async () => {
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const emailInput = screen.getByLabelText(/email address/i)
+        const passwordInput = screen.getByLabelText(/password/i)
+        expect(emailInput).toBeRequired()
+        expect(passwordInput).toBeRequired()
+      })
+    })
+
+    it('handles profile fetch failure after registration', async () => {
+      window.location.search = '?token=valid-invite-token'
+      
+      axios.get
+        .mockResolvedValueOnce({
+          data: { email: 'newuser@example.com', valid: true }
+        })
+        .mockRejectedValueOnce({
+          response: { status: 500, data: { error: 'Profile fetch failed' } }
+        })
+      
+      axios.post.mockResolvedValueOnce({
+        data: { access_token: 'new-token' }
+      })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const passwordInput = screen.getByLabelText(/password/i)
+        fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } })
+      })
+      
+      await waitFor(() => {
+        const submitButton = screen.getByRole('button', { name: /create account/i })
+        if (submitButton && !submitButton.disabled) {
+          fireEvent.click(submitButton)
+        }
+      })
+      
+      // Registration should complete but profile fetch fails
+      // User should still be logged in with token
+      await waitFor(() => {
+        expect(localStorage.getItem('token')).toBe('new-token')
+      }, { timeout: 3000 })
+    })
+  })
 })

@@ -138,4 +138,187 @@ describe('FilterConfiguration', () => {
       filterRules[1]
     ])
   })
+
+  describe('Edge Cases', () => {
+    it('converts column to uppercase', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.change(columnInputs[0], { target: { value: 'h' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].column).toBe('H')
+    })
+
+    it('handles column with numbers', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.change(columnInputs[0], { target: { value: '6' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].column).toBe('6')
+    })
+
+    it('handles invalid column values', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      // Test with special characters
+      fireEvent.change(columnInputs[0], { target: { value: '@#$' } })
+
+      // Component should still update (validation happens on backend)
+      expect(mockSetFilterRules).toHaveBeenCalled()
+    })
+
+    it('handles empty column value', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.change(columnInputs[0], { target: { value: '' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].column).toBe('')
+    })
+
+    it('handles empty value field', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const valueInputs = screen.getAllByLabelText(/value to match/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.change(valueInputs[0], { target: { value: '' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].value).toBe('')
+    })
+
+    it('allows removing all rules', () => {
+      const filterRules = [{ column: 'F', value: '0' }]
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const removeButtons = screen.getAllByLabelText(/remove filter rule/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.click(removeButtons[0])
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0]).toEqual([])
+    })
+
+    it('allows adding multiple rules', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const addButton = screen.getByText(/add filter rule/i)
+      
+      // Add multiple rules
+      mockSetFilterRules.mockClear()
+      fireEvent.click(addButton)
+      
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0].length).toBe(filterRules.length + 1)
+    })
+
+    it('handles value with special characters', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const valueInputs = screen.getAllByLabelText(/value to match/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      fireEvent.change(valueInputs[0], { target: { value: 'test@value#123' } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].value).toBe('test@value#123')
+    })
+
+    it('handles very long column values', () => {
+      const filterRules = getDefaultFilterRules()
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+
+      const columnInputs = screen.getAllByLabelText(/column/i)
+      
+      mockSetFilterRules.mockClear()
+      
+      const longValue = 'A'.repeat(100)
+      fireEvent.change(columnInputs[0], { target: { value: longValue } })
+
+      expect(mockSetFilterRules).toHaveBeenCalled()
+      const lastCall = mockSetFilterRules.mock.calls[mockSetFilterRules.mock.calls.length - 1]
+      expect(lastCall[0][0].column).toBe(longValue.toUpperCase())
+    })
+  })
 })

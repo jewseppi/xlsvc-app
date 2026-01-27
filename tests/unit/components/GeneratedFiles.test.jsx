@@ -218,4 +218,159 @@ describe('GeneratedFiles', () => {
     expect(consoleSpy).toHaveBeenCalled()
     consoleSpy.mockRestore()
   })
+
+  describe('Edge Cases and Complete Coverage', () => {
+    it('handles 401 Unauthorized error', async () => {
+      axios.get.mockRejectedValue({
+        response: {
+          status: 401,
+          data: { error: 'Unauthorized' }
+        }
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <GeneratedFiles fileId={1} apiBase={apiBase} onDownload={mockOnDownload} />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/no generated files yet/i)).toBeInTheDocument()
+      })
+
+      expect(consoleSpy).toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+
+    it('handles 403 Forbidden error', async () => {
+      axios.get.mockRejectedValue({
+        response: {
+          status: 403,
+          data: { error: 'Forbidden' }
+        }
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <GeneratedFiles fileId={1} apiBase={apiBase} onDownload={mockOnDownload} />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/no generated files yet/i)).toBeInTheDocument()
+      })
+
+      consoleSpy.mockRestore()
+    })
+
+    it('handles 500 Internal Server Error', async () => {
+      axios.get.mockRejectedValue({
+        response: {
+          status: 500,
+          data: { error: 'Internal Server Error' }
+        }
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <GeneratedFiles fileId={1} apiBase={apiBase} onDownload={mockOnDownload} />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/no generated files yet/i)).toBeInTheDocument()
+      })
+
+      consoleSpy.mockRestore()
+    })
+
+    it('handles fileId prop changes', async () => {
+      const { rerender } = render(
+        <ThemeProvider theme={theme}>
+          <GeneratedFiles fileId={1} apiBase={apiBase} onDownload={mockOnDownload} />
+        </ThemeProvider>
+      )
+
+      axios.get.mockResolvedValueOnce({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+
+      await waitFor(() => {
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/files/1/generated'),
+          expect.any(Object)
+        )
+      })
+
+      // Change fileId
+      axios.get.mockResolvedValueOnce({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+
+      await act(async () => {
+        rerender(
+          <ThemeProvider theme={theme}>
+            <GeneratedFiles fileId={2} apiBase={apiBase} onDownload={mockOnDownload} />
+          </ThemeProvider>
+        )
+      })
+
+      await waitFor(() => {
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/files/2/generated'),
+          expect.any(Object)
+        )
+      })
+    })
+
+    it('displays all file types together', async () => {
+      const mockFiles = {
+        macros: [{ id: 1, original_filename: 'macro1.bas' }],
+        instructions: [{ id: 2, original_filename: 'instructions1.txt' }],
+        reports: [{ id: 3, original_filename: 'report1.json' }],
+        processed: [{ id: 4, original_filename: 'processed1.xlsx' }]
+      }
+      axios.get.mockResolvedValue({ data: mockFiles })
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <GeneratedFiles fileId={1} apiBase={apiBase} onDownload={mockOnDownload} />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('macro1.bas')).toBeInTheDocument()
+        expect(screen.getByText('instructions1.txt')).toBeInTheDocument()
+        expect(screen.getByText('report1.json')).toBeInTheDocument()
+        expect(screen.getByText('processed1.xlsx')).toBeInTheDocument()
+      })
+    })
+
+    it('handles download error scenarios', async () => {
+      const mockFiles = {
+        macros: [{ id: 1, original_filename: 'macro1.bas' }],
+        instructions: [],
+        reports: [],
+        processed: []
+      }
+      axios.get.mockResolvedValue({ data: mockFiles })
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <GeneratedFiles fileId={1} apiBase={apiBase} onDownload={mockOnDownload} />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('macro1.bas')).toBeInTheDocument()
+      })
+
+      const downloadButton = screen.getByText('Download')
+      await act(async () => {
+        fireEvent.click(downloadButton)
+      })
+      
+      // onDownload should be called even if download fails (error handling is in parent)
+      expect(mockOnDownload).toHaveBeenCalledWith(1, 'macro1.bas')
+    })
+  })
 })
