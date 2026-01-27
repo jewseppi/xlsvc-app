@@ -13,8 +13,8 @@ import {
   FileMeta,
   FileName,
   Badge
-} from '../../../../src/styled/FileComponents'
-import { theme } from '../../../../src/styled/theme'
+} from '../../../src/styled/FileComponents'
+import { theme } from '../../../src/styled/theme'
 
 const renderWithTheme = (component) => {
   return render(

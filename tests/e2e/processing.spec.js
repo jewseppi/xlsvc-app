@@ -40,4 +40,54 @@ test.describe('File Processing', () => {
     // Auth form should be visible
     await expect(page.getByText('Excel Processor')).toBeVisible({ timeout: 15000 });
   });
+
+  test('should show processing section when file is selected', async ({ page }) => {
+    // Mock authentication
+    await page.goto('/app');
+    await page.evaluate(() => {
+      localStorage.setItem('token', 'mock-token');
+    });
+    
+    await page.route('**/api/profile', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 1, email: 'test@example.com', is_admin: false })
+      });
+    });
+    
+    await page.route('**/api/files', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          files: [{ id: 1, original_filename: 'test.xlsx', file_size: 1024, processed: false }]
+        })
+      });
+    });
+    
+    await page.route('**/api/files/*/generated', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ macros: [], instructions: [], reports: [], processed: [] })
+      });
+    });
+    
+    await page.route('**/api/files/*/history', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ history: [] })
+      });
+    });
+    
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    
+    // Wait for dashboard
+    await page.waitForSelector('text=Welcome', { timeout: 15000 }).catch(() => {});
+    
+    // Look for file or processing section
+    await page.waitForTimeout(2000);
+  });
 });

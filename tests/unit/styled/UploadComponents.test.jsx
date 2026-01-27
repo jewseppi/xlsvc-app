@@ -10,8 +10,8 @@ import {
   ProgressBar,
   ProgressFill,
   ProgressText
-} from '../../../../src/styled/UploadComponents'
-import { theme } from '../../../../src/styled/theme'
+} from '../../../src/styled/UploadComponents'
+import { theme } from '../../../src/styled/theme'
 
 const renderWithTheme = (component) => {
   return render(

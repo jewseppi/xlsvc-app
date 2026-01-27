@@ -1376,21 +1376,33 @@ describe('Dashboard', () => {
     it('handles file deselection', async () => {
       await renderDashboard()
       
+      // Wait for files to be rendered
+      await waitFor(() => {
+        expect(screen.getByText('test-file.xlsx')).toBeInTheDocument()
+      }, { timeout: 3000 })
+      
       // Select a file
       const fileItem = screen.getByText('test-file.xlsx')
       await act(async () => {
         fireEvent.click(fileItem)
       })
       
-      // Deselect by clicking again or another file
+      // Wait a bit for selection to take effect
+      await waitFor(() => {
+        // File should still be visible after selection
+        expect(screen.getByText('test-file.xlsx')).toBeInTheDocument()
+      }, { timeout: 3000 })
+      
+      // Select another file (this deselects the first)
       const otherFile = screen.getByText('processed-file.xlsx')
       await act(async () => {
         fireEvent.click(otherFile)
       })
       
+      // Both files should still be in the list
       await waitFor(() => {
         expect(screen.getByText('processed-file.xlsx')).toBeInTheDocument()
-      })
+      }, { timeout: 3000 })
     })
 
     it('handles files array updates after upload', async () => {

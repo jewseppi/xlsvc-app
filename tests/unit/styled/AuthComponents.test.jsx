@@ -13,8 +13,8 @@ import {
   FormGroup,
   Alert,
   CenterText
-} from '../../../../src/styled/AuthComponents'
-import { theme } from '../../../../src/styled/theme'
+} from '../../../src/styled/AuthComponents'
+import { theme } from '../../../src/styled/theme'
 
 const renderWithTheme = (component) => {
   return render(

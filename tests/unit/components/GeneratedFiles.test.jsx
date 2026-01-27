@@ -342,7 +342,7 @@ describe('GeneratedFiles', () => {
         expect(screen.queryByText(/loading generated files/i)).not.toBeInTheDocument()
       }, { timeout: 5000 })
 
-      // Wait for all files to appear - check each one individually with proper waiting
+      // Wait for all files to appear - files are rendered with original_filename
       await waitFor(() => {
         expect(screen.getByText('macro1.bas')).toBeInTheDocument()
       }, { timeout: 5000 })

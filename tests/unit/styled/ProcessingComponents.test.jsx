@@ -13,8 +13,8 @@ import {
   DownloadSection,
   DownloadGrid,
   DownloadCard
-} from '../../../../src/styled/ProcessingComponents'
-import { theme } from '../../../../src/styled/theme'
+} from '../../../src/styled/ProcessingComponents'
+import { theme } from '../../../src/styled/theme'
 
 const renderWithTheme = (component) => {
   return render(
