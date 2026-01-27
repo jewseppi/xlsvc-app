@@ -173,7 +173,9 @@ describe('AdminPanel', () => {
       await renderAdminPanel()
       
       await waitFor(() => {
-        expect(screen.getByText('user1@example.com')).toBeInTheDocument()
+        // user1@example.com appears in both invitations and users, so use getAllByText
+        const userElements = screen.getAllByText('user1@example.com')
+        expect(userElements.length).toBeGreaterThan(0)
       })
     })
 
@@ -261,7 +263,9 @@ describe('AdminPanel', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('user1@example.com')).toBeInTheDocument()
+        // user1@example.com appears in both invitations and users, so use getAllByText
+        const userElements = screen.getAllByText('user1@example.com')
+        expect(userElements.length).toBeGreaterThan(0)
       })
 
       // Find and click expire button (assuming there's a button or link to expire)
@@ -345,7 +349,9 @@ describe('AdminPanel', () => {
       await renderAdminPanel()
 
       await waitFor(() => {
-        expect(screen.getByText('user1@example.com')).toBeInTheDocument()
+        // user1@example.com appears in both invitations and users, so use getAllByText
+        const userElements = screen.getAllByText('user1@example.com')
+        expect(userElements.length).toBeGreaterThan(0)
         expect(screen.getByText('admin@example.com')).toBeInTheDocument()
       })
     })
@@ -381,7 +387,9 @@ describe('AdminPanel', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('user1@example.com')).toBeInTheDocument()
+        // user1@example.com appears in both invitations and users, so use getAllByText
+        const userElements = screen.getAllByText('user1@example.com')
+        expect(userElements.length).toBeGreaterThan(0)
       })
 
       // Find delete button (assuming there's a delete button for each user)
@@ -454,7 +462,9 @@ describe('AdminPanel', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('user1@example.com')).toBeInTheDocument()
+        // user1@example.com appears in both invitations and users, so use getAllByText
+        const userElements = screen.getAllByText('user1@example.com')
+        expect(userElements.length).toBeGreaterThan(0)
       })
 
       // This would require clicking delete, then confirming

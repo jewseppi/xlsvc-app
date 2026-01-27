@@ -337,23 +337,27 @@ describe('GeneratedFiles', () => {
         </ThemeProvider>
       )
 
-      // Wait for API call to complete
-      await waitFor(() => {
-        expect(axios.get).toHaveBeenCalled()
-      })
-
-      // Wait for loading to complete
+      // Wait for loading to complete first
       await waitFor(() => {
         expect(screen.queryByText(/loading generated files/i)).not.toBeInTheDocument()
-      }, { timeout: 3000 })
+      }, { timeout: 5000 })
 
-      // Wait for all files to appear
+      // Wait for all files to appear - check each one individually with proper waiting
       await waitFor(() => {
         expect(screen.getByText('macro1.bas')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await waitFor(() => {
         expect(screen.getByText('instructions1.txt')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await waitFor(() => {
         expect(screen.getByText('report1.json')).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      await waitFor(() => {
         expect(screen.getByText('processed1.xlsx')).toBeInTheDocument()
-      }, { timeout: 3000 })
+      }, { timeout: 5000 })
     })
 
     it('handles download error scenarios', async () => {

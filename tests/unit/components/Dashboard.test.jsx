@@ -865,7 +865,8 @@ describe('Dashboard', () => {
         code: 'ERR_NETWORK'
       })
       
-      const fileInput = screen.getByLabelText(/upload file/i) || document.querySelector('input[type="file"]')
+      // File input doesn't have a label, so use querySelector
+      const fileInput = document.querySelector('input[type="file"]')
       if (fileInput) {
         const file = new File(['test'], 'test.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
         
@@ -889,7 +890,8 @@ describe('Dashboard', () => {
         }
       })
       
-      const fileInput = screen.queryByLabelText(/upload file/i) || document.querySelector('input[type="file"]')
+      // File input doesn't have a label, so use querySelector
+      const fileInput = document.querySelector('input[type="file"]')
       if (fileInput) {
         const file = new File(['test'], 'test.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
         
@@ -909,7 +911,8 @@ describe('Dashboard', () => {
         }
       })
       
-      const fileInput = screen.queryByLabelText(/upload file/i) || document.querySelector('input[type="file"]')
+      // File input doesn't have a label, so use querySelector
+      const fileInput = document.querySelector('input[type="file"]')
       if (fileInput) {
         const file = new File(['test'], 'test.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
         
@@ -1096,11 +1099,18 @@ describe('Dashboard', () => {
     })
 
     it('admin can copy invitation URL to clipboard', async () => {
-      // Mock clipboard API
-      Object.assign(navigator, {
-        clipboard: {
-          writeText: vi.fn(() => Promise.resolve())
-        }
+      // Mock clipboard API using Object.defineProperty since clipboard is read-only
+      const mockWriteText = vi.fn(() => Promise.resolve())
+      // Delete existing clipboard property if it exists, then define it
+      if (navigator.clipboard) {
+        delete navigator.clipboard
+      }
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {
+          writeText: mockWriteText
+        },
+        writable: true,
+        configurable: true
       })
       
       await renderDashboard(mockAdminUser)

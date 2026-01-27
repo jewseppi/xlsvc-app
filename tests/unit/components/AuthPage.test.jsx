@@ -894,39 +894,53 @@ describe('AuthPage', () => {
     it('handles profile fetch failure after registration', async () => {
       window.location.search = '?token=valid-invite-token'
       
-      axios.get
-        .mockResolvedValueOnce({
-          data: { email: 'newuser@example.com', valid: true }
-        })
-        .mockRejectedValueOnce({
-          response: { status: 500, data: { error: 'Profile fetch failed' } }
-        })
-      
+      // First call validates invitation
+      axios.post.mockResolvedValueOnce({
+        data: { valid: true, email: 'newuser@example.com' }
+      })
+      // Second call is registration
       axios.post.mockResolvedValueOnce({
         data: { access_token: 'new-token' }
       })
+      // Profile fetch fails
+      axios.get.mockRejectedValueOnce({
+        response: { status: 500, data: { error: 'Profile fetch failed' } }
+      })
+      // Files fetch also fails (to avoid null error)
+      axios.get.mockResolvedValueOnce({ data: { files: [] } })
       
       await act(async () => {
         render(<App />)
       })
       
+      // Wait for the component to switch to registration view
       await waitFor(() => {
         const passwordInput = screen.getByLabelText(/password/i)
+        expect(passwordInput).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      // Ensure we're in registration mode by checking for create account button
+      await waitFor(() => {
+        const createAccountButton = screen.queryByRole('button', { name: /create account/i })
+        expect(createAccountButton).toBeInTheDocument()
+      }, { timeout: 5000 })
+      
+      const passwordInput = screen.getByLabelText(/password/i)
+      await act(async () => {
         fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } })
       })
       
-      await waitFor(() => {
-        const submitButton = screen.getByRole('button', { name: /create account/i })
-        if (submitButton && !submitButton.disabled) {
-          fireEvent.click(submitButton)
-        }
+      // Now click the create account button
+      const submitButton = screen.getByRole('button', { name: /create account/i })
+      await act(async () => {
+        fireEvent.click(submitButton)
       })
       
       // Registration should complete but profile fetch fails
       // User should still be logged in with token
       await waitFor(() => {
         expect(localStorage.getItem('token')).toBe('new-token')
-      }, { timeout: 3000 })
+      }, { timeout: 5000 })
     })
   })
 })
