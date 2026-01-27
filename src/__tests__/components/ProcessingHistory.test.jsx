@@ -2,7 +2,7 @@
  * Unit tests for ProcessingHistory component
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { ThemeProvider } from 'styled-components'
 import ProcessingHistory from '../../components/ProcessingHistory'
 import { theme } from '../../styled/theme'
@@ -23,8 +23,13 @@ describe('ProcessingHistory', () => {
     global.alert = vi.fn()
   })
 
-  it('shows loading state initially', () => {
-    axios.get.mockResolvedValue({ data: { history: [] } })
+  it('shows loading state initially', async () => {
+    // Use a promise that we control to keep component in loading state
+    let resolvePromise
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve
+    })
+    axios.get.mockReturnValue(pendingPromise)
     
     render(
       <ThemeProvider theme={theme}>
@@ -38,7 +43,17 @@ describe('ProcessingHistory', () => {
       </ThemeProvider>
     )
 
+    // Assert loading state while promise is pending
     expect(screen.getByText(/loading processing history/i)).toBeInTheDocument()
+    
+    // Resolve the promise and wait for state updates to complete
+    await act(async () => {
+      resolvePromise({ data: { history: [] } })
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByText(/no processing history yet/i)).toBeInTheDocument()
+    })
   })
 
   it('shows empty state when no history exists', async () => {
@@ -273,7 +288,9 @@ describe('ProcessingHistory', () => {
     })
 
     const downloadButton = screen.getByText(/download processed file/i)
-    fireEvent.click(downloadButton)
+    await act(async () => {
+      fireEvent.click(downloadButton)
+    })
     expect(mockOnDownload).toHaveBeenCalledWith(10, 'processed.xlsx')
   })
 

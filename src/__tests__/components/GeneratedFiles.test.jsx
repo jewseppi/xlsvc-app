@@ -2,7 +2,7 @@
  * Unit tests for GeneratedFiles component
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import { ThemeProvider } from 'styled-components'
 import GeneratedFiles from '../../components/GeneratedFiles'
 import { theme } from '../../styled/theme'
@@ -19,8 +19,13 @@ describe('GeneratedFiles', () => {
     localStorage.setItem('token', 'test-token')
   })
 
-  it('shows loading state initially', () => {
-    axios.get.mockResolvedValue({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+  it('shows loading state initially', async () => {
+    // Use a promise that we control to keep component in loading state
+    let resolvePromise
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve
+    })
+    axios.get.mockReturnValue(pendingPromise)
     
     render(
       <ThemeProvider theme={theme}>
@@ -28,7 +33,17 @@ describe('GeneratedFiles', () => {
       </ThemeProvider>
     )
 
+    // Assert loading state while promise is pending
     expect(screen.getByText(/loading generated files/i)).toBeInTheDocument()
+    
+    // Resolve the promise and wait for state updates to complete
+    await act(async () => {
+      resolvePromise({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByText(/no generated files yet/i)).toBeInTheDocument()
+    })
   })
 
   it('shows empty state when no files are available', async () => {
@@ -170,7 +185,9 @@ describe('GeneratedFiles', () => {
     })
 
     const downloadButton = screen.getByText('Download')
-    downloadButton.click()
+    await act(async () => {
+      fireEvent.click(downloadButton)
+    })
     expect(mockOnDownload).toHaveBeenCalledWith(1, 'macro1.bas')
   })
 

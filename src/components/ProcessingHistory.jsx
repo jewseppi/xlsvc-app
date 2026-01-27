@@ -211,7 +211,7 @@ function ProcessingHistory({
         <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "flex-end" }}>
           <Button
             variant="ghost"
-            small
+            $small
             onClick={handleClearHistory}
             style={{ color: "#ef4444" }}
           >

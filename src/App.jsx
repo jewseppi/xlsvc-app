@@ -833,7 +833,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
                   </div>
                   <Button
                     variant="ghost"
-                    small
+                    $small
                     onClick={() => handleExpireInvitation(inv.id, inv.email)}
                     style={{ whiteSpace: "nowrap", marginLeft: "0.5rem" }}
                   >
@@ -913,7 +913,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
                   ) : (
                     <Button
                       variant="ghost"
-                      small
+                      $small
                       onClick={() => handleDeleteUser(user)}
                       style={{ whiteSpace: "nowrap", marginLeft: "0.5rem", color: "#ef4444" }}
                     >
@@ -1010,13 +1010,13 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
             gap: "0.5rem",
           }}
         >
-          <Button variant="ghost" small onClick={onCleanup} style={{ justifyContent: "flex-start" }}>
+          <Button variant="ghost" $small onClick={onCleanup} style={{ justifyContent: "flex-start" }}>
             🧹 Cleanup Missing Files
           </Button>
-          <Button variant="ghost" small onClick={onDebug} style={{ justifyContent: "flex-start" }}>
+          <Button variant="ghost" $small onClick={onDebug} style={{ justifyContent: "flex-start" }}>
             🔍 Debug Storage
           </Button>
-          <Button variant="ghost" small onClick={onTestGitHub} style={{ justifyContent: "flex-start" }}>
+          <Button variant="ghost" $small onClick={onTestGitHub} style={{ justifyContent: "flex-start" }}>
             🔗 Test GitHub Connection
           </Button>
         </div>
@@ -1628,7 +1628,7 @@ function Dashboard({ user, logout }) {
           <DashboardTitle>Excel Processor</DashboardTitle>
           <UserInfo>
             <UserEmail>Welcome, {user.email}</UserEmail>
-            <Button variant="danger" small onClick={logout}>
+            <Button variant="danger" $small onClick={logout}>
               Logout
             </Button>
           </UserInfo>

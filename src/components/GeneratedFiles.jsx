@@ -120,7 +120,7 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
               </FileName>
               <Button
                 variant="primary"
-                small
+                $small
                 onClick={() => onDownload(file.id, file.original_filename)}
               >
                 Download
@@ -140,7 +140,7 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
               </FileName>
               <Button
                 variant="secondary"
-                small
+                $small
                 onClick={() => onDownload(file.id, file.original_filename)}
               >
                 Download
@@ -160,7 +160,7 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
               </FileName>
               <Button
                 variant="secondary"
-                small
+                $small
                 onClick={() => onDownload(file.id, file.original_filename)}
               >
                 Download
@@ -180,7 +180,7 @@ function GeneratedFiles({ fileId, apiBase, onDownload }) {
               </FileName>
               <Button
                 variant="primary"
-                small
+                $small
                 onClick={() => onDownload(file.id, file.original_filename)}
               >
                 Download

@@ -23,9 +23,9 @@ export const Button = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${props => props.small ? props.theme.spacing.sm : props.theme.spacing.md} 
-           ${props => props.small ? props.theme.spacing.md : props.theme.spacing.lg};
-  font-size: ${props => props.small ? '0.875rem' : '1rem'};
+  padding: ${props => props.$small ? props.theme.spacing.sm : props.theme.spacing.md} 
+           ${props => props.$small ? props.theme.spacing.md : props.theme.spacing.lg};
+  font-size: ${props => props.$small ? '0.875rem' : '1rem'};
   font-weight: 600;
   border-radius: ${props => props.theme.borderRadius.md};
   border: none;
