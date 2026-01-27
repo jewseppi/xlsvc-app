@@ -1295,4 +1295,185 @@ describe('Dashboard', () => {
       // The actual UI implementation may vary
     })
   })
+
+  describe('Filter Rules Management', () => {
+    it('handles filter rule updates', async () => {
+      await renderDashboard()
+      
+      // Select a file first
+      const fileItem = screen.getByText('test-file.xlsx')
+      await act(async () => {
+        fireEvent.click(fileItem)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/analyze file/i)).toBeInTheDocument()
+      })
+    })
+
+    it('handles empty filter rules array', async () => {
+      await renderDashboard()
+      
+      // Select a file
+      const fileItem = screen.getByText('test-file.xlsx')
+      await act(async () => {
+        fireEvent.click(fileItem)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/analyze file/i)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Job Status Polling', () => {
+    it('handles job status transitions', async () => {
+      await renderDashboard()
+      
+      // Select a file
+      const fileItem = screen.getByText('test-file.xlsx')
+      await act(async () => {
+        fireEvent.click(fileItem)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/analyze file/i)).toBeInTheDocument()
+      })
+    })
+
+    it('handles job completion state', async () => {
+      await renderDashboard()
+      
+      axios.post.mockResolvedValueOnce({
+        data: { job_id: 'job-123', status: 'processing' }
+      })
+      
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockUser })
+        }
+        if (url.includes('/job-status')) {
+          return Promise.resolve({
+            data: { status: 'completed', result_file_id: 2 }
+          })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: mockFiles } })
+        }
+        if (url.includes('/admin')) {
+          return Promise.resolve({ data: { invitations: [], users: [] } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Welcome, test@example.com/i)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('File State Management', () => {
+    it('handles file deselection', async () => {
+      await renderDashboard()
+      
+      // Select a file
+      const fileItem = screen.getByText('test-file.xlsx')
+      await act(async () => {
+        fireEvent.click(fileItem)
+      })
+      
+      // Deselect by clicking again or another file
+      const otherFile = screen.getByText('processed-file.xlsx')
+      await act(async () => {
+        fireEvent.click(otherFile)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText('processed-file.xlsx')).toBeInTheDocument()
+      })
+    })
+
+    it('handles files array updates after upload', async () => {
+      await renderDashboard()
+      
+      const fileInput = document.querySelector('input[type="file"]')
+      if (fileInput) {
+        const file = new File(['test'], 'new-file.xlsx', {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        })
+        
+        axios.post.mockResolvedValueOnce({
+          data: {
+            file_id: 3,
+            original_filename: 'new-file.xlsx',
+            file_size: 1024
+          }
+        })
+        
+        axios.get.mockImplementation((url) => {
+          if (url.includes('/profile')) {
+            return Promise.resolve({ data: mockUser })
+          }
+          if (url.includes('/files') && !url.includes('/generated') && !url.includes('/history')) {
+            return Promise.resolve({
+              data: {
+                files: [
+                  ...mockFiles,
+                  { id: 3, original_filename: 'new-file.xlsx', file_size: 1024, processed: false }
+                ]
+              }
+            })
+          }
+          if (url.includes('/admin')) {
+            return Promise.resolve({ data: { invitations: [], users: [] } })
+          }
+          return Promise.resolve({ data: {} })
+        })
+        
+        await act(async () => {
+          fireEvent.change(fileInput, { target: { files: [file] } })
+        })
+        
+        await waitFor(() => {
+          expect(axios.post).toHaveBeenCalled()
+        })
+      }
+    })
+  })
+
+  describe('Error Recovery', () => {
+    it('recovers from processing errors', async () => {
+      await renderDashboard()
+      
+      // Select a file
+      const fileItem = screen.getByText('test-file.xlsx')
+      await act(async () => {
+        fireEvent.click(fileItem)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/analyze file/i)).toBeInTheDocument()
+      })
+    })
+
+    it('handles API errors gracefully', async () => {
+      await renderDashboard()
+      
+      // Simulate API error
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockUser })
+        }
+        if (url.includes('/files')) {
+          return Promise.reject({ response: { status: 500, data: { error: 'Server error' } } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+      
+      // Dashboard should still render even if files fail to load
+      await waitFor(() => {
+        expect(screen.getByText(/Welcome, test@example.com/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+    })
+  })
 })

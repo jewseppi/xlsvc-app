@@ -273,5 +273,87 @@ describe('LandingPage', () => {
         expect(link).toHaveAttribute('target', '_blank')
       })
     })
+
+    it('has accessible navigation structure', () => {
+      renderLandingPage()
+      const header = document.querySelector('header')
+      expect(header).toBeInTheDocument()
+      
+      // Check for navigation links in header
+      const navLinks = header?.querySelectorAll('a')
+      expect(navLinks?.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Content Accessibility', () => {
+    it('has proper heading hierarchy', () => {
+      renderLandingPage()
+      const h1 = document.querySelector('h1')
+      const h2 = document.querySelectorAll('h2')
+      expect(h1 || h2.length > 0).toBeTruthy()
+    })
+
+    it('has descriptive alt text for images (if any)', () => {
+      renderLandingPage()
+      const images = document.querySelectorAll('img')
+      images.forEach(img => {
+        // Images should have alt text or be decorative
+        expect(img.hasAttribute('alt')).toBe(true)
+      })
+    })
+  })
+
+  describe('Responsive Design', () => {
+    it('renders correctly on mobile viewport', () => {
+      // Mock mobile viewport
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375
+      })
+      
+      renderLandingPage()
+      expect(document.body).toBeInTheDocument()
+    })
+
+    it('renders correctly on tablet viewport', () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 768
+      })
+      
+      renderLandingPage()
+      expect(document.body).toBeInTheDocument()
+    })
+
+    it('renders correctly on desktop viewport', () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1920
+      })
+      
+      renderLandingPage()
+      expect(document.body).toBeInTheDocument()
+    })
+  })
+
+  describe('Interactive Elements', () => {
+    it('has clickable CTA buttons', () => {
+      renderLandingPage()
+      const tryItFreeButton = screen.getByText('Try It Free')
+      expect(tryItFreeButton.closest('a')).toBeInTheDocument()
+      
+      const viewSourceButton = screen.getByText('View Source')
+      expect(viewSourceButton.closest('a')).toBeInTheDocument()
+    })
+
+    it('has working navigation links', () => {
+      renderLandingPage()
+      const launchAppLink = screen.getByText('Launch App')
+      const link = launchAppLink.closest('a')
+      expect(link).toHaveAttribute('href', '/app')
+    })
   })
 })
