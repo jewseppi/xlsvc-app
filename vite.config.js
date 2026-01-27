@@ -5,4 +5,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/app/',
+  // Exclude test files from being processed by Vite
+  optimizeDeps: {
+    exclude: ['vitest', '@vitest/expect', '@vitest/runner', '@vitest/ui', '@vitest/coverage-v8']
+  },
+  build: {
+    rollupOptions: {
+      external: ['vitest', '@vitest/expect', '@vitest/runner', '@vitest/ui', '@vitest/coverage-v8']
+    }
+  }
 })
