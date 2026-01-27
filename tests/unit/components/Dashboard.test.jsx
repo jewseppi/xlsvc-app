@@ -1376,13 +1376,15 @@ describe('Dashboard', () => {
     it('handles file deselection', async () => {
       await renderDashboard()
       
-      // Wait for files to be rendered
+      // Wait for files to be rendered - use getAllByText since filename appears multiple times
       await waitFor(() => {
-        expect(screen.getByText('test-file.xlsx')).toBeInTheDocument()
+        const fileElements = screen.getAllByText('test-file.xlsx')
+        expect(fileElements.length).toBeGreaterThan(0)
       }, { timeout: 3000 })
       
-      // Select a file
-      const fileItem = screen.getByText('test-file.xlsx')
+      // Select a file - use the first occurrence (the actual file item, not the "Selected:" text)
+      const fileElements = screen.getAllByText('test-file.xlsx')
+      const fileItem = fileElements[0] // Use the first one (the file name in the list)
       await act(async () => {
         fireEvent.click(fileItem)
       })
@@ -1390,18 +1392,21 @@ describe('Dashboard', () => {
       // Wait a bit for selection to take effect
       await waitFor(() => {
         // File should still be visible after selection
-        expect(screen.getByText('test-file.xlsx')).toBeInTheDocument()
+        const elements = screen.getAllByText('test-file.xlsx')
+        expect(elements.length).toBeGreaterThan(0)
       }, { timeout: 3000 })
       
-      // Select another file (this deselects the first)
-      const otherFile = screen.getByText('processed-file.xlsx')
+      // Select another file (this deselects the first) - use getAllByText
+      const otherFileElements = screen.getAllByText('processed-file.xlsx')
+      const otherFile = otherFileElements[0] // Use the first occurrence
       await act(async () => {
         fireEvent.click(otherFile)
       })
       
       // Both files should still be in the list
       await waitFor(() => {
-        expect(screen.getByText('processed-file.xlsx')).toBeInTheDocument()
+        const processedElements = screen.getAllByText('processed-file.xlsx')
+        expect(processedElements.length).toBeGreaterThan(0)
       }, { timeout: 3000 })
     })
 
