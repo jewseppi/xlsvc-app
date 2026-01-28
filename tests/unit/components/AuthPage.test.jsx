@@ -13,6 +13,16 @@ import axios from 'axios'
 
 vi.mock('axios')
 
+const setAppSearch = (search) => {
+  window.location.search = search
+}
+
+const renderApp = async () => {
+  await act(async () => {
+    render(<App />)
+  })
+}
+
 describe('AuthPage', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -744,23 +754,19 @@ describe('AuthPage', () => {
   })
 
   describe('Edge Cases and Error Scenarios', () => {
-    it('handles invitation token validation errors', async () => {
-      window.location.search = '?token=invalid-token'
-      
-      axios.get.mockRejectedValueOnce({
-        response: {
-          status: 400,
-          data: { error: 'Invalid invitation token' }
-        }
+    it('shows fallback error when invitation validation fails without response', async () => {
+      setAppSearch('?token=bad-token&register=1')
+
+      axios.post.mockRejectedValueOnce({
+        message: 'Network Error',
+        code: 'ERR_NETWORK'
       })
-      axios.get.mockResolvedValue({ data: null })
-      
-      await act(async () => {
-        render(<App />)
-      })
-      
+
+      await renderApp()
+
       await waitFor(() => {
-        expect(screen.getByText(/Excel Processor/i)).toBeInTheDocument()
+        // Invitation validation catch only uses response?.data?.error, otherwise fixed fallback
+        expect(screen.getByText(/Invalid invitation link/i)).toBeInTheDocument()
       })
     })
 
@@ -787,8 +793,7 @@ describe('AuthPage', () => {
       
       // Should show error message
       await waitFor(() => {
-        const errorElements = screen.queryAllByText(/timeout|error|failed/i)
-        expect(errorElements.length).toBeGreaterThan(0)
+        expect(screen.getByText(/timeout of 5000ms exceeded/i)).toBeInTheDocument()
       }, { timeout: 3000 })
     })
 
@@ -821,6 +826,34 @@ describe('AuthPage', () => {
       }, { timeout: 3000 })
     })
 
+    it('handles 403 Forbidden error response', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 403,
+          data: { error: 'Forbidden' }
+        }
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const emailInput = screen.getByLabelText(/email address/i)
+        const passwordInput = screen.getByLabelText(/password/i)
+        const submitButton = screen.getByRole('button', { name: /sign in/i })
+        
+        fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+        fireEvent.change(passwordInput, { target: { value: 'password123' } })
+        fireEvent.click(submitButton)
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Forbidden/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+    })
+
     it('handles 500 Internal Server Error response', async () => {
       axios.post.mockRejectedValueOnce({
         response: {
@@ -845,8 +878,7 @@ describe('AuthPage', () => {
       })
       
       await waitFor(() => {
-        const errorElements = screen.queryAllByText(/error|failed|server/i)
-        expect(errorElements.length).toBeGreaterThan(0)
+        expect(screen.getByText(/Internal Server Error/i)).toBeInTheDocument()
       }, { timeout: 3000 })
     })
 
@@ -876,6 +908,110 @@ describe('AuthPage', () => {
       })
     })
 
+    it('validates password with unicode characters', async () => {
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      // Switch to registration mode
+      await waitFor(() => {
+        const registerLink = screen.getByText(/don't have an account|registration requires/i)
+        fireEvent.click(registerLink)
+      })
+      
+      await waitFor(() => {
+        const passwordInput = screen.getByLabelText(/password/i)
+        // Test password with unicode characters
+        fireEvent.change(passwordInput, { target: { value: 'TestPass123你好世界' } })
+      })
+      
+      // Password should be accepted (validation happens on backend)
+      await waitFor(() => {
+        const passwordInput = screen.getByLabelText(/password/i)
+        expect(passwordInput.value).toContain('TestPass123')
+      })
+    })
+
+    it('handles token storage edge cases', async () => {
+      // Test that token is stored correctly after login
+      localStorage.clear()
+      axios.get.mockResolvedValue({ data: null })
+      axios.post.mockResolvedValueOnce({ data: { access_token: 'test-token-123' } })
+      axios.get.mockResolvedValueOnce({ data: { id: 1, email: 'test@example.com' } })
+      axios.get.mockResolvedValueOnce({ data: { files: [] } })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const emailInput = screen.getByLabelText(/email address/i)
+        const passwordInput = screen.getByLabelText(/password/i)
+        const submitButton = screen.getByRole('button', { name: /sign in/i })
+        
+        fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+        fireEvent.change(passwordInput, { target: { value: 'password123' } })
+        fireEvent.click(submitButton)
+      })
+      
+      await waitFor(() => {
+        expect(localStorage.getItem('token')).toBe('test-token-123')
+      }, { timeout: 3000 })
+    })
+
+    it('handles token retrieval edge cases', async () => {
+      // Test that existing token is retrieved on mount
+      localStorage.setItem('token', 'existing-token')
+      axios.get.mockResolvedValueOnce({ data: { id: 1, email: 'test@example.com' } })
+      axios.get.mockResolvedValue({ data: { files: [] } })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/profile'),
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer existing-token'
+            })
+          })
+        )
+      })
+    })
+
+    it('submitting non-invited registration form shows invitation-required error', async () => {
+      const user = userEvent.setup()
+
+      await renderApp()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /don't have an account/i })).toBeInTheDocument()
+      })
+
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /don't have an account/i }))
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Registration requires an invitation/i)).toBeInTheDocument()
+      })
+
+      const form = document.querySelector('form')
+      expect(form).toBeTruthy()
+
+      await act(async () => {
+        fireEvent.submit(form)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Registration requires an invitation link/i)).toBeInTheDocument()
+      })
+    })
+
     it('prevents form submission with empty fields', async () => {
       axios.get.mockResolvedValue({ data: null })
       
@@ -892,7 +1028,7 @@ describe('AuthPage', () => {
     })
 
     it('handles profile fetch failure after registration', async () => {
-      window.location.search = '?token=valid-invite-token'
+      window.location.search = '?token=valid-invite-token&register=1'
       
       // First call validates invitation
       axios.post.mockResolvedValueOnce({
@@ -906,8 +1042,6 @@ describe('AuthPage', () => {
       axios.get.mockRejectedValueOnce({
         response: { status: 500, data: { error: 'Profile fetch failed' } }
       })
-      // Files fetch also fails (to avoid null error)
-      axios.get.mockResolvedValueOnce({ data: { files: [] } })
       
       await act(async () => {
         render(<App />)
@@ -944,10 +1078,336 @@ describe('AuthPage', () => {
           const token = localStorage.getItem('token')
           expect(token).toBeTruthy()
         }, { timeout: 5000 })
+
+        await waitFor(() => {
+          expect(screen.getByText(/Profile fetch failed/i)).toBeInTheDocument()
+        })
       } else {
         // If button not found, just verify the form is in registration mode
         expect(passwordInput).toBeInTheDocument()
       }
+    })
+
+    it('handles network error during login (no response)', async () => {
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      // Network error without response object
+      axios.post.mockRejectedValueOnce({
+        message: 'Network Error',
+        code: 'ERR_NETWORK'
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+      })
+
+      const emailInput = screen.getByLabelText(/email address/i)
+      const passwordInput = screen.getByLabelText(/password/i)
+      const submitButton = screen.getByRole('button', { name: /sign in/i })
+
+      await act(async () => {
+        await user.type(emailInput, 'test@example.com')
+        await user.type(passwordInput, 'password123')
+        await user.click(submitButton)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Network Error/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      consoleSpy.mockRestore()
+    })
+
+    it('handles network timeout during registration', async () => {
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      window.location.search = '?token=valid-token&register=1'
+      
+      // First call validates invitation
+      axios.post.mockResolvedValueOnce({
+        data: { valid: true, email: 'newuser@example.com' }
+      })
+      // Registration call times out
+      axios.post.mockRejectedValueOnce({
+        code: 'ECONNABORTED',
+        message: 'timeout of 10000ms exceeded',
+        config: { timeout: 10000 }
+      })
+      
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        const passwordInput = screen.getByLabelText(/password/i)
+        expect(passwordInput).toBeInTheDocument()
+      })
+
+      const passwordInput = screen.getByLabelText(/password/i)
+      
+      await act(async () => {
+        await user.type(passwordInput, 'ValidPass123!@')
+      })
+
+      await waitFor(() => {
+        const submitButton = screen.getByRole('button', { name: /create account/i })
+        expect(submitButton).not.toBeDisabled()
+      })
+
+      const submitButton = screen.getByRole('button', { name: /create account/i })
+      
+      await act(async () => {
+        await user.click(submitButton)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/timeout of 10000ms exceeded/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      consoleSpy.mockRestore()
+    })
+
+    it('handles 404 Not Found error response', async () => {
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 404,
+          data: { error: 'Endpoint not found' }
+        }
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const emailInput = screen.getByLabelText(/email address/i)
+        const passwordInput = screen.getByLabelText(/password/i)
+        const submitButton = screen.getByRole('button', { name: /sign in/i })
+        
+        fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+        fireEvent.change(passwordInput, { target: { value: 'password123' } })
+        fireEvent.click(submitButton)
+      })
+      
+      await waitFor(() => {
+        const errorElements = screen.queryAllByText(/not found|error|failed/i)
+        expect(errorElements.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+
+      consoleSpy.mockRestore()
+    })
+
+    it('handles request cancellation', async () => {
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      // Simulate request cancellation
+      axios.post.mockRejectedValueOnce({
+        message: 'Request cancelled',
+        code: 'ERR_CANCELED'
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+      })
+
+      const emailInput = screen.getByLabelText(/email address/i)
+      const passwordInput = screen.getByLabelText(/password/i)
+      const submitButton = screen.getByRole('button', { name: /sign in/i })
+
+      await act(async () => {
+        await user.type(emailInput, 'test@example.com')
+        await user.type(passwordInput, 'password123')
+        await user.click(submitButton)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Request cancelled/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      consoleSpy.mockRestore()
+    })
+
+    it('handles empty error response object', async () => {
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      axios.post.mockRejectedValueOnce({
+        response: {}
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+      })
+
+      const emailInput = screen.getByLabelText(/email address/i)
+      const passwordInput = screen.getByLabelText(/password/i)
+      const submitButton = screen.getByRole('button', { name: /sign in/i })
+
+      await act(async () => {
+        await user.type(emailInput, 'test@example.com')
+        await user.type(passwordInput, 'password123')
+        await user.click(submitButton)
+      })
+
+      await waitFor(() => {
+        const errorElements = screen.queryAllByText(/something went wrong|error/i)
+        expect(errorElements.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+
+      consoleSpy.mockRestore()
+    })
+
+    it('handles invitation token validation network error', async () => {
+      window.location.search = '?token=test-token&register=1'
+      
+      axios.post.mockRejectedValueOnce({
+        code: 'ERR_NETWORK',
+        message: 'Network Error'
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const errorElements = screen.queryAllByText(/network error|invalid invitation|error/i)
+        expect(errorElements.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+    })
+
+    it('handles invitation token validation timeout', async () => {
+      window.location.search = '?token=test-token&register=1'
+      
+      axios.post.mockRejectedValueOnce({
+        code: 'ECONNABORTED',
+        message: 'timeout of 5000ms exceeded'
+      })
+      axios.get.mockResolvedValue({ data: null })
+      
+      await act(async () => {
+        render(<App />)
+      })
+      
+      await waitFor(() => {
+        const errorElements = screen.queryAllByText(/timeout|invalid invitation|error/i)
+        expect(errorElements.length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+    })
+
+    it('validates password with only special characters (fails validation)', async () => {
+      const user = userEvent.setup()
+      window.location.search = '?token=valid-token&register=1'
+      
+      axios.post.mockResolvedValueOnce({
+        data: { valid: true, email: 'test@example.com' }
+      })
+      
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
+      })
+
+      const passwordInput = screen.getByLabelText(/password/i)
+      
+      await act(async () => {
+        await user.type(passwordInput, '!@#$%^&*()_+')
+      })
+
+      // Password should not meet all requirements (missing uppercase, lowercase, number)
+      await waitFor(() => {
+        const submitButton = screen.getByRole('button', { name: /create account/i })
+        expect(submitButton).toBeDisabled()
+      })
+    })
+
+    it('validates password with only numbers (fails validation)', async () => {
+      const user = userEvent.setup()
+      window.location.search = '?token=valid-token&register=1'
+      
+      axios.post.mockResolvedValueOnce({
+        data: { valid: true, email: 'test@example.com' }
+      })
+      
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
+      })
+
+      const passwordInput = screen.getByLabelText(/password/i)
+      
+      await act(async () => {
+        await user.type(passwordInput, '123456789012')
+      })
+
+      // Password should not meet all requirements (missing uppercase, lowercase, special)
+      await waitFor(() => {
+        const submitButton = screen.getByRole('button', { name: /create account/i })
+        expect(submitButton).toBeDisabled()
+      })
+    })
+
+    it('handles token storage when localStorage is unavailable', async () => {
+      const user = userEvent.setup()
+      const setItemSpy = vi.spyOn(window.localStorage.__proto__, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceededError')
+      })
+      
+      axios.post.mockResolvedValueOnce({ data: { access_token: 'test-token' } })
+      axios.get.mockResolvedValueOnce({ data: { id: 1, email: 'test@example.com' } })
+      axios.get.mockResolvedValueOnce({ data: { files: [] } })
+      
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+      })
+
+      const emailInput = screen.getByLabelText(/email address/i)
+      const passwordInput = screen.getByLabelText(/password/i)
+      const submitButton = screen.getByRole('button', { name: /sign in/i })
+
+      await act(async () => {
+        await user.type(emailInput, 'test@example.com')
+        await user.type(passwordInput, 'password123')
+        await user.click(submitButton)
+      })
+
+      // Should still attempt to set token (error will be thrown but handled)
+      await waitFor(() => {
+        expect(setItemSpy).toHaveBeenCalled()
+      })
+
+      setItemSpy.mockRestore()
     })
   })
 })
