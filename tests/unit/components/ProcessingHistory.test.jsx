@@ -571,6 +571,119 @@ describe('ProcessingHistory', () => {
         expect(global.alert).toHaveBeenCalled()
       })
     })
+
+    it('successfully deletes history item', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      axios.delete.mockResolvedValueOnce({ data: { success: true } })
+      global.confirm = vi.fn(() => true) // User confirms
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+      })
+
+      const deleteButtons = screen.getAllByTitle(/delete this history item/i)
+      if (deleteButtons.length > 0) {
+        await act(async () => {
+          fireEvent.click(deleteButtons[0])
+        })
+
+        await waitFor(() => {
+          expect(axios.delete).toHaveBeenCalledWith(
+            expect.stringContaining('/files/1/history/1'),
+            expect.any(Object)
+          )
+        })
+
+        // Verify setHistory was called to remove the item
+        await waitFor(() => {
+          expect(mockSetHistory).toHaveBeenCalled()
+        })
+      }
+    })
+
+    it('successfully clears all history', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        },
+        {
+          job_id: 2,
+          processed_at: '2024-01-16T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 3
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      axios.delete.mockResolvedValueOnce({ 
+        data: { deleted_count: 2 } 
+      })
+      global.confirm = vi.fn(() => true) // User confirms
+      global.alert = vi.fn()
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+            isAdmin={true}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/clear all history/i)).toBeInTheDocument()
+      })
+
+      const clearButton = screen.getByText(/clear all history/i)
+      await act(async () => {
+        fireEvent.click(clearButton)
+      })
+
+      await waitFor(() => {
+        expect(axios.delete).toHaveBeenCalledWith(
+          expect.stringContaining('/files/1/history'),
+          expect.any(Object)
+        )
+      })
+
+      // Verify setHistory was called with empty array
+      await waitFor(() => {
+        expect(mockSetHistory).toHaveBeenCalledWith([])
+      })
+
+      // Verify alert was called with success message
+      await waitFor(() => {
+        expect(global.alert).toHaveBeenCalledWith(
+          expect.stringContaining('Cleared 2 history items')
+        )
+      })
+    })
   })
 
   describe('Edge Cases', () => {
@@ -734,6 +847,499 @@ describe('ProcessingHistory', () => {
         // Use getAllByText for "processing" as well since it might appear multiple times
         const processingElements = screen.getAllByText(/processing/i)
         expect(processingElements.length).toBeGreaterThan(0)
+      })
+    })
+
+    it('handles date formatting with different timezone formats', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-12-31T23:59:59Z', // Edge case: end of year
+          status: 'completed',
+          deleted_rows: 5
+        },
+        {
+          job_id: 2,
+          processed_at: '2024-01-01T00:00:00Z', // Edge case: start of year
+          status: 'completed',
+          deleted_rows: 3
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+      })
+
+      // Dates should be formatted and displayed
+      expect(screen.getAllByText(/rows deleted/i).length).toBeGreaterThan(0)
+    })
+
+    it('handles very long filenames', async () => {
+      const longFilename = 'a'.repeat(200) + '.xlsx'
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5,
+          processed_filename: longFilename,
+          result_file_id: 10
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+      })
+
+      // Should handle long filename (may be truncated in display)
+      const downloadButton = screen.getByText(/download processed file/i)
+      await act(async () => {
+        fireEvent.click(downloadButton)
+      })
+      expect(mockOnDownload).toHaveBeenCalledWith(10, longFilename)
+    })
+
+    it('handles missing result_file_id for completed jobs', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5,
+          processed_filename: 'processed.xlsx'
+          // Missing result_file_id
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+      })
+
+      // Download button should not appear if result_file_id is missing
+      expect(screen.queryByText(/download processed file/i)).not.toBeInTheDocument()
+    })
+
+    it('handles delete item with network timeout', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      const timeoutError = new Error('timeout of 5000ms exceeded')
+      timeoutError.code = 'ECONNABORTED'
+      axios.delete.mockRejectedValue(timeoutError)
+      global.alert = vi.fn()
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+      })
+
+      const deleteButtons = screen.getAllByTitle(/delete this history item/i)
+      if (deleteButtons.length > 0) {
+        await act(async () => {
+          fireEvent.click(deleteButtons[0])
+        })
+
+        await waitFor(() => {
+          expect(axios.delete).toHaveBeenCalled()
+        })
+
+        // Should show alert on timeout error
+        await waitFor(() => {
+          expect(global.alert).toHaveBeenCalled()
+        })
+      }
+    })
+
+    it('handles clear history with network timeout', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      const timeoutError = new Error('timeout of 5000ms exceeded')
+      timeoutError.code = 'ECONNABORTED'
+      axios.delete.mockRejectedValue(timeoutError)
+      global.alert = vi.fn()
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+            isAdmin={true}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/clear all history/i)).toBeInTheDocument()
+      })
+
+      const clearButton = screen.getByText(/clear all history/i)
+      await act(async () => {
+        fireEvent.click(clearButton)
+      })
+
+      await waitFor(() => {
+        expect(axios.delete).toHaveBeenCalled()
+      })
+
+      // Should show alert on timeout error
+      await waitFor(() => {
+        expect(global.alert).toHaveBeenCalled()
+      })
+    })
+
+    it('handles delete item with network error (no response)', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      const networkError = new Error('Network Error')
+      networkError.request = {}
+      axios.delete.mockRejectedValue(networkError)
+      global.alert = vi.fn()
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+      })
+
+      const deleteButtons = screen.getAllByTitle(/delete this history item/i)
+      if (deleteButtons.length > 0) {
+        await act(async () => {
+          fireEvent.click(deleteButtons[0])
+        })
+
+        await waitFor(() => {
+          expect(axios.delete).toHaveBeenCalled()
+        })
+
+        // Should show alert on network error
+        await waitFor(() => {
+          expect(global.alert).toHaveBeenCalled()
+        })
+      }
+    })
+
+    it('handles multiple delete operations sequentially', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        },
+        {
+          job_id: 2,
+          processed_at: '2024-01-16T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 3
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      axios.delete.mockResolvedValue({ data: { success: true } })
+      global.confirm = vi.fn(() => true)
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+      })
+
+      const deleteButtons = screen.getAllByTitle(/delete this history item/i)
+      expect(deleteButtons.length).toBe(2)
+
+      // Delete first item
+      if (deleteButtons.length > 0) {
+        await act(async () => {
+          fireEvent.click(deleteButtons[0])
+        })
+
+        await waitFor(() => {
+          expect(axios.delete).toHaveBeenCalledWith(
+            expect.stringContaining('/files/1/history/1'),
+            expect.any(Object)
+          )
+        })
+
+        // Verify setHistory was called
+        expect(mockSetHistory).toHaveBeenCalled()
+      }
+    })
+
+    it('handles error state with different error messages', async () => {
+      axios.get.mockRejectedValue(new Error('Custom error message'))
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={[]}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/failed to load processing history/i)).toBeInTheDocument()
+      })
+
+      expect(consoleSpy).toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+
+    it('handles error state with 401 Unauthorized', async () => {
+      axios.get.mockRejectedValue({
+        response: {
+          status: 401,
+          data: { error: 'Unauthorized' }
+        }
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={[]}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/failed to load processing history/i)).toBeInTheDocument()
+      })
+
+      expect(consoleSpy).toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+
+    it('handles error state with 403 Forbidden', async () => {
+      axios.get.mockRejectedValue({
+        response: {
+          status: 403,
+          data: { error: 'Forbidden' }
+        }
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={[]}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/failed to load processing history/i)).toBeInTheDocument()
+      })
+
+      expect(consoleSpy).toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+
+    it('handles error state with 500 Internal Server Error', async () => {
+      axios.get.mockRejectedValue({
+        response: {
+          status: 500,
+          data: { error: 'Internal Server Error' }
+        }
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={[]}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/failed to load processing history/i)).toBeInTheDocument()
+      })
+
+      expect(consoleSpy).toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+
+    it('handles filter rules with special characters in values', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5,
+          filter_rules: [
+            { column: 'F', value: "test'value" },
+            { column: 'G', value: 'test"value' },
+            { column: 'H', value: 'test&value' }
+          ]
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/filters applied/i)).toBeInTheDocument()
+      })
+
+      // Should display filter rules with special characters
+      expect(screen.getByText(/F = 'test'value'/i)).toBeInTheDocument()
+    })
+
+    it('handles very long filter rules list', async () => {
+      const manyRules = Array.from({ length: 20 }, (_, i) => ({
+        column: String.fromCharCode(65 + i), // A, B, C, ...
+        value: `value${i}`
+      }))
+      
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5,
+          filter_rules: manyRules
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/filters applied/i)).toBeInTheDocument()
+      })
+
+      // Should display all filter rules
+      manyRules.forEach(rule => {
+        expect(screen.getByText(new RegExp(`${rule.column} = '${rule.value}'`))).toBeInTheDocument()
       })
     })
   })

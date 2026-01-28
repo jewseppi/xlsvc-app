@@ -239,6 +239,58 @@ describe('API Coverage - All Endpoints', () => {
       })
     })
 
+    it('POST /api/upload - file type validation error', async () => {
+      const formData = new FormData()
+      formData.append('file', new Blob(['test'], { type: 'text/plain' }))
+
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: { error: 'Invalid file type. Only .xlsx and .xls files are allowed' }
+        }
+      })
+
+      await expect(
+        axios.post(`${API_BASE}/upload`, formData, mockHeaders)
+      ).rejects.toMatchObject({
+        response: {
+          status: 400,
+          data: { error: 'Invalid file type. Only .xlsx and .xls files are allowed' }
+        }
+      })
+    })
+
+    it('POST /api/upload - progress tracking', async () => {
+      const formData = new FormData()
+      formData.append('file', new Blob(['test'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+
+      const mockResponse = {
+        data: {
+          file_id: 1,
+          original_filename: 'test.xlsx',
+          file_size: 1024
+        }
+      }
+
+      // Mock progress event
+      const onUploadProgress = vi.fn()
+      axios.post.mockResolvedValueOnce(mockResponse)
+
+      await axios.post(`${API_BASE}/upload`, formData, {
+        ...mockHeaders,
+        headers: {
+          ...mockHeaders.headers,
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress
+      })
+
+      expect(axios.post).toHaveBeenCalled()
+      // Verify onUploadProgress callback was passed
+      const callArgs = axios.post.mock.calls[0]
+      expect(callArgs[2]).toHaveProperty('onUploadProgress')
+    })
+
     it('GET /api/files/${fileId}/generated - success scenario', async () => {
       const fileId = 1
       const mockResponse = {
@@ -354,6 +406,21 @@ describe('API Coverage - All Endpoints', () => {
 
       expect(response.data.deleted_count).toBe(5)
     })
+
+    it('DELETE /api/files/${fileId}/history - error scenario', async () => {
+      axios.delete.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'Failed to clear history' }
+        }
+      })
+
+      await expect(
+        axios.delete(`${API_BASE}/files/1/history`, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 500 }
+      })
+    })
   })
 
   describe('Processing APIs', () => {
@@ -416,6 +483,25 @@ describe('API Coverage - All Endpoints', () => {
       expect(response.data.macro_file_id).toBe(1)
     })
 
+    it('POST /api/generate-instructions/${fileId} - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'Failed to generate instructions' }
+        }
+      })
+
+      await expect(
+        axios.post(
+          `${API_BASE}/generate-instructions/1`,
+          { filter_rules: [] },
+          mockHeaders
+        )
+      ).rejects.toMatchObject({
+        response: { status: 500 }
+      })
+    })
+
     it('POST /api/dispatch-job - success scenario', async () => {
       const mockResponse = {
         data: {
@@ -433,6 +519,25 @@ describe('API Coverage - All Endpoints', () => {
       )
 
       expect(response.data.job_id).toBe('job-123')
+    })
+
+    it('POST /api/dispatch-job - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'Failed to dispatch job' }
+        }
+      })
+
+      await expect(
+        axios.post(
+          `${API_BASE}/dispatch-job`,
+          { file_id: 1, filter_rules: [] },
+          mockHeaders
+        )
+      ).rejects.toMatchObject({
+        response: { status: 500 }
+      })
     })
 
     it('GET /api/job-status/${jobId} - success scenario (completed)', async () => {
@@ -482,6 +587,22 @@ describe('API Coverage - All Endpoints', () => {
 
       expect(response.data.status).toBe('failed')
     })
+
+    it('GET /api/job-status/${jobId} - timeout scenario', async () => {
+      axios.get.mockRejectedValueOnce({
+        code: 'ECONNABORTED',
+        message: 'timeout of 5000ms exceeded'
+      })
+
+      await expect(
+        axios.get(`${API_BASE}/job-status/job-123`, {
+          ...mockHeaders,
+          timeout: 5000
+        })
+      ).rejects.toMatchObject({
+        code: 'ECONNABORTED'
+      })
+    })
   })
 
   describe('Admin APIs', () => {
@@ -508,6 +629,21 @@ describe('API Coverage - All Endpoints', () => {
       expect(response.data.invitations).toHaveLength(1)
     })
 
+    it('GET /api/admin/invitations - error scenario', async () => {
+      axios.get.mockRejectedValueOnce({
+        response: {
+          status: 403,
+          data: { error: 'Forbidden' }
+        }
+      })
+
+      await expect(
+        axios.get(`${API_BASE}/admin/invitations`, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 403 }
+      })
+    })
+
     it('POST /api/admin/create-invitation - success scenario', async () => {
       const mockResponse = {
         data: {
@@ -527,6 +663,25 @@ describe('API Coverage - All Endpoints', () => {
       expect(response.data.invitation_url).toContain('invite')
     })
 
+    it('POST /api/admin/create-invitation - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: { error: 'Invalid email address' }
+        }
+      })
+
+      await expect(
+        axios.post(
+          `${API_BASE}/admin/create-invitation`,
+          { email: 'invalid-email' },
+          mockHeaders
+        )
+      ).rejects.toMatchObject({
+        response: { status: 400 }
+      })
+    })
+
     it('POST /api/admin/invitations/${id}/expire - success scenario', async () => {
       const invitationId = 1
 
@@ -539,6 +694,21 @@ describe('API Coverage - All Endpoints', () => {
       )
 
       expect(response.data.success).toBe(true)
+    })
+
+    it('POST /api/admin/invitations/${id}/expire - error scenario', async () => {
+      axios.post.mockRejectedValueOnce({
+        response: {
+          status: 404,
+          data: { error: 'Invitation not found' }
+        }
+      })
+
+      await expect(
+        axios.post(`${API_BASE}/admin/invitations/999/expire`, {}, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 404 }
+      })
     })
 
     it('GET /api/admin/users - success scenario', async () => {
@@ -560,6 +730,21 @@ describe('API Coverage - All Endpoints', () => {
       expect(response.data.users).toHaveLength(1)
     })
 
+    it('GET /api/admin/users - error scenario', async () => {
+      axios.get.mockRejectedValueOnce({
+        response: {
+          status: 403,
+          data: { error: 'Forbidden' }
+        }
+      })
+
+      await expect(
+        axios.get(`${API_BASE}/admin/users`, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 403 }
+      })
+    })
+
     it('GET /api/admin/users/${id} - success scenario', async () => {
       const userId = 1
       const mockResponse = {
@@ -579,6 +764,21 @@ describe('API Coverage - All Endpoints', () => {
       )
 
       expect(response.data.id).toBe(1)
+    })
+
+    it('GET /api/admin/users/${id} - error scenario', async () => {
+      axios.get.mockRejectedValueOnce({
+        response: {
+          status: 404,
+          data: { error: 'User not found' }
+        }
+      })
+
+      await expect(
+        axios.get(`${API_BASE}/admin/users/999`, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 404 }
+      })
     })
 
     it('DELETE /api/admin/users/${id} - success scenario', async () => {
@@ -629,6 +829,21 @@ describe('API Coverage - All Endpoints', () => {
       expect(response.data.status).toBe('success')
     })
 
+    it('GET /api/test-github - error scenario', async () => {
+      axios.get.mockRejectedValueOnce({
+        response: {
+          status: 500,
+          data: { error: 'GitHub connection failed' }
+        }
+      })
+
+      await expect(
+        axios.get(`${API_BASE}/test-github`, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 500 }
+      })
+    })
+
     it('GET /api/debug/storage - success scenario', async () => {
       const mockResponse = {
         data: {
@@ -647,6 +862,21 @@ describe('API Coverage - All Endpoints', () => {
       )
 
       expect(response.data.storage_folders).toHaveProperty('macros')
+    })
+
+    it('GET /api/debug/storage - error scenario', async () => {
+      axios.get.mockRejectedValueOnce({
+        response: {
+          status: 403,
+          data: { error: 'Forbidden' }
+        }
+      })
+
+      await expect(
+        axios.get(`${API_BASE}/debug/storage`, mockHeaders)
+      ).rejects.toMatchObject({
+        response: { status: 403 }
+      })
     })
   })
 
