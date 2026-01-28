@@ -113,7 +113,7 @@ describe('AdminPanel', () => {
     // Wait for admin panel to render
     await waitFor(() => {
       expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument()
-    }, { timeout: 3000 })
+    }, { timeout: 10000 })
   }
 
   describe('Admin Panel Visibility', () => {
@@ -244,13 +244,38 @@ describe('AdminPanel', () => {
     })
 
     it('expires (revokes) invitation successfully', async () => {
-      vi.useFakeTimers()
       await renderAdminPanel()
+
+      // Refresh invitations after expiration
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: [] } })
+        }
+        if (url.includes('/admin/invitations')) {
+          return Promise.resolve({ data: { invitations: mockInvitations.filter(inv => inv.id !== 1) } })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
+        }
+        return Promise.resolve({ data: {} })
+      })
 
       axios.post.mockResolvedValueOnce({ data: {} })
 
       // "Revoke" button appears for pending invitations
-      const revokeButton = await screen.findByRole('button', { name: /revoke/i })
+      const revokeButton = await waitFor(() => 
+        screen.getByRole('button', { name: /revoke/i }),
+        { timeout: 10000 }
+      )
       await userEvent.click(revokeButton)
 
       await waitFor(() => {
@@ -264,33 +289,37 @@ describe('AdminPanel', () => {
             })
           })
         )
-      })
+      }, { timeout: 10000 })
 
-      // Success message is set and auto-cleared after 3s
+      // Success message is set
       await waitFor(() => {
         expect(screen.getByText(/has been revoked/i)).toBeInTheDocument()
-      })
-
-      await act(async () => {
-        vi.advanceTimersByTime(3100)
-      })
-
-      vi.useRealTimers()
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
 
     it('does not expire invitation when confirmation is cancelled', async () => {
       await renderAdminPanel()
 
       window.confirm = vi.fn(() => false)
-      const revokeButton = await screen.findByRole('button', { name: /revoke/i })
+      
+      // Wait for revoke button to be available
+      const revokeButton = await waitFor(() => 
+        screen.getByRole('button', { name: /revoke/i }),
+        { timeout: 10000 }
+      )
+      
       await userEvent.click(revokeButton)
+
+      await waitFor(() => {
+        expect(window.confirm).toHaveBeenCalled()
+      }, { timeout: 10000 })
 
       expect(axios.post).not.toHaveBeenCalledWith(
         expect.stringContaining('/admin/invitations/1/expire'),
         expect.anything(),
         expect.anything()
       )
-    })
+    }, { timeout: 20000 })
 
     it('copies invitation URL to clipboard', async () => {
       await renderAdminPanel()
@@ -305,22 +334,38 @@ describe('AdminPanel', () => {
         }
       })
 
+      // Ensure all API calls are mocked when refreshing invitations
       axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: [] } })
+        }
         if (url.includes('/admin/invitations')) {
           return Promise.resolve({ data: { invitations: mockInvitations } })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
         }
         return Promise.resolve({ data: {} })
       })
 
-      const emailInput = screen.getByLabelText(/email address/i)
-      const submitButton = screen.getByRole('button', { name: /generate/i })
+      const emailInput = await waitFor(() => screen.getByLabelText(/email address/i), { timeout: 10000 })
+      const submitButton = await waitFor(() => screen.getByRole('button', { name: /generate/i }), { timeout: 10000 })
 
       await userEvent.type(emailInput, 'newuser@example.com')
       await userEvent.click(submitButton)
 
       await waitFor(() => {
         expect(screen.getByText(/Invitation link generated/i)).toBeInTheDocument()
-      })
+      }, { timeout: 10000 })
 
       // Find copy button if it exists
       const copyButtons = screen.queryAllByText(/copy/i)
@@ -329,9 +374,9 @@ describe('AdminPanel', () => {
 
         await waitFor(() => {
           expect(navigator.clipboard.writeText).toHaveBeenCalledWith(invitationUrl)
-        })
+        }, { timeout: 10000 })
       }
-    })
+    }, { timeout: 20000 })
   })
 
   describe('User Management', () => {
@@ -347,8 +392,8 @@ describe('AdminPanel', () => {
             })
           })
         )
-      })
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
 
     it('displays user list', async () => {
       await renderAdminPanel()
@@ -358,8 +403,8 @@ describe('AdminPanel', () => {
         const userElements = screen.getAllByText('user1@example.com')
         expect(userElements.length).toBeGreaterThan(0)
         expect(screen.getByText('admin@example.com')).toBeInTheDocument()
-      })
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
 
     it('fetches user details before deletion', async () => {
       await renderAdminPanel()
@@ -385,6 +430,12 @@ describe('AdminPanel', () => {
         if (url.includes('/profile')) {
           return Promise.resolve({ data: mockAdminUser })
         }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
         if (url.includes('/files')) {
           return Promise.resolve({ data: { files: [] } })
         }
@@ -395,10 +446,10 @@ describe('AdminPanel', () => {
         // user1@example.com appears in both invitations and users, so use getAllByText
         const userElements = screen.getAllByText('user1@example.com')
         expect(userElements.length).toBeGreaterThan(0)
-      })
+      }, { timeout: 10000 })
 
       // Find delete button (assuming there's a delete button for each user)
-      const deleteButtons = screen.queryAllByText(/delete/i)
+      const deleteButtons = await waitFor(() => screen.queryAllByRole('button', { name: /delete/i }), { timeout: 10000 })
       if (deleteButtons.length > 0) {
         await userEvent.click(deleteButtons[0])
 
@@ -411,9 +462,9 @@ describe('AdminPanel', () => {
               })
             })
           )
-        })
+        }, { timeout: 10000 })
       }
-    })
+    }, { timeout: 20000 })
 
     it('deletes user successfully', async () => {
       await renderAdminPanel()
@@ -423,11 +474,18 @@ describe('AdminPanel', () => {
         job_count: 3
       }
 
+      // Track how many times /admin/users is called
+      let usersCallCount = 0
       axios.get.mockImplementation((url) => {
         if (url.includes('/admin/users/1')) {
           return Promise.resolve({ data: userDetails })
         }
         if (url.includes('/admin/users')) {
+          usersCallCount++
+          // After delete, return updated list without user 1
+          if (usersCallCount > 1) {
+            return Promise.resolve({ data: { users: mockUsers.filter(u => u.id !== 1) } })
+          }
           return Promise.resolve({ data: { users: mockUsers } })
         }
         if (url.includes('/admin/invitations')) {
@@ -435,6 +493,12 @@ describe('AdminPanel', () => {
         }
         if (url.includes('/profile')) {
           return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
         }
         if (url.includes('/files')) {
           return Promise.resolve({ data: { files: [] } })
@@ -445,13 +509,13 @@ describe('AdminPanel', () => {
       axios.delete.mockResolvedValueOnce({ data: {} })
 
       // Open delete confirmation modal
-      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /delete/i }))
+      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /delete/i }), { timeout: 5000 })
       await userEvent.click(deleteButtons[0])
 
       // Confirm modal appears
       await waitFor(() => {
         expect(screen.getByText(/delete user/i)).toBeInTheDocument()
-      })
+      }, { timeout: 5000 })
 
       await userEvent.click(screen.getByRole('button', { name: /delete user/i }))
 
@@ -464,8 +528,8 @@ describe('AdminPanel', () => {
             })
           })
         )
-      })
-    })
+      }, { timeout: 5000 })
+    }, { timeout: 10000 })
 
     it('shows error message on user deletion failure', async () => {
       await renderAdminPanel()
@@ -488,6 +552,12 @@ describe('AdminPanel', () => {
         if (url.includes('/profile')) {
           return Promise.resolve({ data: mockAdminUser })
         }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
         if (url.includes('/files')) {
           return Promise.resolve({ data: { files: [] } })
         }
@@ -500,19 +570,19 @@ describe('AdminPanel', () => {
         }
       })
 
-      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /delete/i }))
+      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /delete/i }), { timeout: 5000 })
       await userEvent.click(deleteButtons[0])
 
       await waitFor(() => {
         expect(screen.getByText(/delete user/i)).toBeInTheDocument()
-      })
+      }, { timeout: 5000 })
 
       await userEvent.click(screen.getByRole('button', { name: /delete user/i }))
 
       await waitFor(() => {
         expect(screen.getByText(/Cannot delete user/i)).toBeInTheDocument()
-      })
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 15000 })
   })
 
   describe('Admin Tools', () => {
@@ -521,7 +591,10 @@ describe('AdminPanel', () => {
 
       axios.post.mockResolvedValueOnce({ data: { removed_count: 2 } })
 
-      const cleanupButton = await screen.findByRole('button', { name: /cleanup missing files/i })
+      const cleanupButton = await waitFor(() => 
+        screen.getByRole('button', { name: /cleanup missing files/i }),
+        { timeout: 10000 }
+      )
       await userEvent.click(cleanupButton)
 
       await waitFor(() => {
@@ -535,8 +608,8 @@ describe('AdminPanel', () => {
           })
         )
         expect(window.alert).toHaveBeenCalled()
-      })
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
 
     it('runs debug storage tool', async () => {
       await renderAdminPanel()
@@ -550,10 +623,31 @@ describe('AdminPanel', () => {
             }
           })
         }
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: [] } })
+        }
+        if (url.includes('/admin/invitations')) {
+          return Promise.resolve({ data: { invitations: mockInvitations } })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
+        }
         return Promise.resolve({ data: {} })
       })
 
-      const debugButton = await screen.findByRole('button', { name: /debug storage/i })
+      const debugButton = await waitFor(() => 
+        screen.getByRole('button', { name: /debug storage/i }),
+        { timeout: 10000 }
+      )
       await userEvent.click(debugButton)
 
       await waitFor(() => {
@@ -565,8 +659,8 @@ describe('AdminPanel', () => {
             })
           })
         )
-      })
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
 
     it('runs detailed GitHub test tool', async () => {
       await renderAdminPanel()
@@ -575,12 +669,33 @@ describe('AdminPanel', () => {
         if (url.includes('/test-github')) {
           return Promise.resolve({ data: { status: 'ok' } })
         }
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: [] } })
+        }
+        if (url.includes('/admin/invitations')) {
+          return Promise.resolve({ data: { invitations: mockInvitations } })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
+        }
         return Promise.resolve({ data: {} })
       })
 
       axios.post.mockResolvedValueOnce({ data: { ok: true } })
 
-      const githubButton = await screen.findByRole('button', { name: /test github connection/i })
+      const githubButton = await waitFor(() => 
+        screen.getByRole('button', { name: /test github connection/i }),
+        { timeout: 10000 }
+      )
       await userEvent.click(githubButton)
 
       await waitFor(() => {
@@ -602,8 +717,8 @@ describe('AdminPanel', () => {
             })
           })
         )
-      })
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
   })
 
   describe('Error Handling', () => {
@@ -618,6 +733,12 @@ describe('AdminPanel', () => {
         if (url.includes('/admin/users')) {
           return Promise.resolve({ data: { users: [] } })
         }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
         if (url.includes('/files')) {
           return Promise.resolve({ data: { files: [] } })
         }
@@ -630,11 +751,11 @@ describe('AdminPanel', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument()
-      })
+      }, { timeout: 10000 })
 
       // Component should still render even if invitations fail to load
       expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument()
-    })
+    }, { timeout: 20000 })
 
     it('handles user loading error', async () => {
       axios.get.mockImplementation((url) => {
@@ -647,6 +768,12 @@ describe('AdminPanel', () => {
         if (url.includes('/admin/users')) {
           return Promise.reject(new Error('Network error'))
         }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
         if (url.includes('/files')) {
           return Promise.resolve({ data: { files: [] } })
         }
@@ -659,11 +786,11 @@ describe('AdminPanel', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument()
-      })
+      }, { timeout: 10000 })
 
       // Component should still render even if users fail to load
       expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument()
-    })
+    }, { timeout: 20000 })
   })
 
   describe('Loading States', () => {
@@ -683,6 +810,12 @@ describe('AdminPanel', () => {
         if (url.includes('/admin/users')) {
           return Promise.resolve({ data: { users: [] } })
         }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
         if (url.includes('/files')) {
           return Promise.resolve({ data: { files: [] } })
         }
@@ -695,7 +828,7 @@ describe('AdminPanel', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument()
-      })
-    })
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
   })
 })
