@@ -12,7 +12,8 @@ import {
   Form,
   FormGroup,
   Alert,
-  CenterText
+  CenterText,
+  FloatingLabel
 } from '../../../src/styled/AuthComponents'
 import { theme } from '../../../src/styled/theme'
 
@@ -157,6 +158,29 @@ describe('AuthComponents', () => {
         <CenterText>Don't have an account?</CenterText>
       )
       expect(getByText("Don't have an account?")).toBeInTheDocument()
+    })
+  })
+
+  describe('FloatingLabel', () => {
+    it('renders without crashing', () => {
+      renderWithTheme(
+        <FloatingLabel data-testid="floating">
+          <input placeholder=" " />
+          <label>Email</label>
+        </FloatingLabel>
+      )
+      expect(document.querySelector('[data-testid="floating"]')).toBeInTheDocument()
+    })
+
+    it('renders input + label structure', () => {
+      const { getByText, container } = renderWithTheme(
+        <FloatingLabel>
+          <input placeholder=" " data-testid="floating-input" />
+          <label>Floating</label>
+        </FloatingLabel>
+      )
+      expect(container.querySelector('[data-testid="floating-input"]')).toBeInTheDocument()
+      expect(getByText('Floating')).toBeInTheDocument()
     })
   })
 })

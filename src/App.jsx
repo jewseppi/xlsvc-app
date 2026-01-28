@@ -95,7 +95,7 @@ const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    background: ${(props) => props.theme.colors.background.primary};
+    background: ${theme.colors.background.primary};
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -106,16 +106,16 @@ const GlobalStyle = createGlobalStyle`
   }
 
   ::-webkit-scrollbar-track {
-    background: ${(props) => props.theme.colors.background.secondary};
+    background: ${theme.colors.background.secondary};
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${(props) => props.theme.colors.border.secondary};
+    background: ${theme.colors.border.secondary};
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: ${(props) => props.theme.colors.accent.primary};
+    background: ${theme.colors.accent.primary};
   }
 `;
 
@@ -473,29 +473,6 @@ function AuthPage({ setUser }) {
     </AuthContainer>
   );
 }
-
-const testGitHub = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(`${API_BASE}/test-github`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log("=== GITHUB TEST SUCCESS ===");
-    console.log(response.data);
-    alert(
-      `GitHub Test Result: ${response.data.status}\nCheck console for details`
-    );
-  } catch (err) {
-    console.error("=== GITHUB TEST ERROR ===");
-    console.error("Error:", err);
-    console.error("Response:", err.response?.data);
-    alert(
-      `GitHub Test Failed: ${
-        err.response?.data?.error || err.message
-      }\nCheck console for details`
-    );
-  }
-};
 
 function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) {
   const [inviteEmail, setInviteEmail] = useState("");

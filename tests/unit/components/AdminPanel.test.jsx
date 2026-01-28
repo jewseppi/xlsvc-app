@@ -243,62 +243,53 @@ describe('AdminPanel', () => {
       })
     })
 
-    it('expires invitation successfully', async () => {
+    it('expires (revokes) invitation successfully', async () => {
+      vi.useFakeTimers()
       await renderAdminPanel()
 
       axios.post.mockResolvedValueOnce({ data: {} })
 
-      // Refresh invitations after expiration
-      axios.get.mockImplementation((url) => {
-        if (url.includes('/admin/invitations')) {
-          return Promise.resolve({
-            data: {
-              invitations: mockInvitations.map(inv =>
-                inv.id === 1 ? { ...inv, status: 'expired' } : inv
-              )
-            }
+      // "Revoke" button appears for pending invitations
+      const revokeButton = await screen.findByRole('button', { name: /revoke/i })
+      await userEvent.click(revokeButton)
+
+      await waitFor(() => {
+        expect(window.confirm).toHaveBeenCalled()
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/admin/invitations/1/expire'),
+          {},
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer test-token'
+            })
           })
-        }
-        return Promise.resolve({ data: {} })
+        )
       })
 
+      // Success message is set and auto-cleared after 3s
       await waitFor(() => {
-        // user1@example.com appears in both invitations and users, so use getAllByText
-        const userElements = screen.getAllByText('user1@example.com')
-        expect(userElements.length).toBeGreaterThan(0)
+        expect(screen.getByText(/has been revoked/i)).toBeInTheDocument()
       })
 
-      // Find and click expire button (assuming there's a button or link to expire)
-      await waitFor(() => {
-        const expireButtons = screen.queryAllByText(/revoke|expire/i)
-        if (expireButtons.length > 0) {
-          return expireButtons[0]
-        }
-        return null
-      }, { timeout: 5000 }).then(async (expireButton) => {
-        if (expireButton) {
-          await userEvent.click(expireButton)
-
-          await waitFor(() => {
-            expect(axios.post).toHaveBeenCalledWith(
-              expect.stringContaining('/admin/invitations/1/expire'),
-              {},
-              expect.objectContaining({
-                headers: expect.objectContaining({
-                  Authorization: 'Bearer test-token'
-                })
-              })
-            )
-          }, { timeout: 3000 })
-        } else {
-          // If button not found, just verify the API would be called
-          // This test verifies the component structure
-          expect(true).toBe(true)
-        }
-      }).catch(() => {
-        // If button not found, that's okay - test verifies structure
-        expect(true).toBe(true)
+      await act(async () => {
+        vi.advanceTimersByTime(3100)
       })
+
+      vi.useRealTimers()
+    })
+
+    it('does not expire invitation when confirmation is cancelled', async () => {
+      await renderAdminPanel()
+
+      window.confirm = vi.fn(() => false)
+      const revokeButton = await screen.findByRole('button', { name: /revoke/i })
+      await userEvent.click(revokeButton)
+
+      expect(axios.post).not.toHaveBeenCalledWith(
+        expect.stringContaining('/admin/invitations/1/expire'),
+        expect.anything(),
+        expect.anything()
+      )
     })
 
     it('copies invitation URL to clipboard', async () => {
@@ -428,12 +419,10 @@ describe('AdminPanel', () => {
       await renderAdminPanel()
 
       const userDetails = {
-        id: 1,
-        email: 'user1@example.com',
-        is_admin: false
+        file_count: 2,
+        job_count: 3
       }
 
-      // Mock user details fetch
       axios.get.mockImplementation((url) => {
         if (url.includes('/admin/users/1')) {
           return Promise.resolve({ data: userDetails })
@@ -453,15 +442,45 @@ describe('AdminPanel', () => {
         return Promise.resolve({ data: {} })
       })
 
-      // Mock delete
       axios.delete.mockResolvedValueOnce({ data: {} })
 
-      // Mock refresh users after delete
-      axios.get.mockImplementation((url) => {
-        if (url.includes('/admin/users')) {
-          return Promise.resolve({
-            data: { users: mockUsers.filter(u => u.id !== 1) }
+      // Open delete confirmation modal
+      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /delete/i }))
+      await userEvent.click(deleteButtons[0])
+
+      // Confirm modal appears
+      await waitFor(() => {
+        expect(screen.getByText(/delete user/i)).toBeInTheDocument()
+      })
+
+      await userEvent.click(screen.getByRole('button', { name: /delete user/i }))
+
+      await waitFor(() => {
+        expect(axios.delete).toHaveBeenCalledWith(
+          expect.stringContaining('/admin/users/1'),
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer test-token'
+            })
           })
+        )
+      })
+    })
+
+    it('shows error message on user deletion failure', async () => {
+      await renderAdminPanel()
+
+      const userDetails = {
+        file_count: 0,
+        job_count: 0
+      }
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/admin/users/1')) {
+          return Promise.resolve({ data: userDetails })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
         }
         if (url.includes('/admin/invitations')) {
           return Promise.resolve({ data: { invitations: mockInvitations } })
@@ -475,26 +494,115 @@ describe('AdminPanel', () => {
         return Promise.resolve({ data: {} })
       })
 
-      await waitFor(() => {
-        // user1@example.com appears in both invitations and users, so use getAllByText
-        const userElements = screen.getAllByText('user1@example.com')
-        expect(userElements.length).toBeGreaterThan(0)
-      })
-
-      // This would require clicking delete, then confirming
-      // The actual implementation may vary
-    })
-
-    it('shows error message on user deletion failure', async () => {
-      await renderAdminPanel()
-
       axios.delete.mockRejectedValueOnce({
         response: {
           data: { error: 'Cannot delete user' }
         }
       })
 
-      // Similar to above, but expect error message
+      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /delete/i }))
+      await userEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByText(/delete user/i)).toBeInTheDocument()
+      })
+
+      await userEvent.click(screen.getByRole('button', { name: /delete user/i }))
+
+      await waitFor(() => {
+        expect(screen.getByText(/Cannot delete user/i)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Admin Tools', () => {
+    it('runs cleanup missing files tool', async () => {
+      await renderAdminPanel()
+
+      axios.post.mockResolvedValueOnce({ data: { removed_count: 2 } })
+
+      const cleanupButton = await screen.findByRole('button', { name: /cleanup missing files/i })
+      await userEvent.click(cleanupButton)
+
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/cleanup-files'),
+          {},
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer test-token'
+            })
+          })
+        )
+        expect(window.alert).toHaveBeenCalled()
+      })
+    })
+
+    it('runs debug storage tool', async () => {
+      await renderAdminPanel()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/debug/storage')) {
+          return Promise.resolve({
+            data: {
+              database_files: [],
+              storage_folders: { uploads: [], processed: [], macros: [] }
+            }
+          })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const debugButton = await screen.findByRole('button', { name: /debug storage/i })
+      await userEvent.click(debugButton)
+
+      await waitFor(() => {
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/debug/storage'),
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer test-token'
+            })
+          })
+        )
+      })
+    })
+
+    it('runs detailed GitHub test tool', async () => {
+      await renderAdminPanel()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/test-github')) {
+          return Promise.resolve({ data: { status: 'ok' } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockResolvedValueOnce({ data: { ok: true } })
+
+      const githubButton = await screen.findByRole('button', { name: /test github connection/i })
+      await userEvent.click(githubButton)
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalled()
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/test-github'),
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer test-token'
+            })
+          })
+        )
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/test-dispatch'),
+          {},
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer test-token'
+            })
+          })
+        )
+      })
     })
   })
 

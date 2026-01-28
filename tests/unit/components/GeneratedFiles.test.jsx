@@ -192,6 +192,37 @@ describe('GeneratedFiles', () => {
     expect(mockOnDownload).toHaveBeenCalledWith(1, 'macro1.bas')
   })
 
+  it('calls onDownload for all file type download buttons', async () => {
+    const mockFiles = {
+      macros: [{ id: 1, original_filename: 'macro1.bas' }],
+      instructions: [{ id: 2, original_filename: 'instructions1.txt' }],
+      reports: [{ id: 3, original_filename: 'report1.json' }],
+      processed: [{ id: 4, original_filename: 'processed1.xlsx' }]
+    }
+    axios.get.mockResolvedValue({ data: mockFiles })
+
+    render(
+      <ThemeProvider theme={theme}>
+        <GeneratedFiles fileId={1} apiBase={apiBase} onDownload={mockOnDownload} />
+      </ThemeProvider>
+    )
+
+    await waitFor(() => {
+      // Four sections, each has a "Download" button
+      expect(screen.getAllByText('Download').length).toBeGreaterThanOrEqual(4)
+    })
+
+    const downloadButtons = screen.getAllByText('Download')
+    await act(async () => {
+      downloadButtons.forEach((btn) => fireEvent.click(btn))
+    })
+
+    expect(mockOnDownload).toHaveBeenCalledWith(1, 'macro1.bas')
+    expect(mockOnDownload).toHaveBeenCalledWith(2, 'instructions1.txt')
+    expect(mockOnDownload).toHaveBeenCalledWith(3, 'report1.json')
+    expect(mockOnDownload).toHaveBeenCalledWith(4, 'processed1.xlsx')
+  })
+
   it('does not load files when fileId is not provided', () => {
     render(
       <ThemeProvider theme={theme}>

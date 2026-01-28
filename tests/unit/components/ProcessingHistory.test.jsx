@@ -76,6 +76,30 @@ describe('ProcessingHistory', () => {
     })
   })
 
+  it('defaults to empty history when API response has no history field', async () => {
+    axios.get.mockResolvedValue({ data: {} })
+
+    render(
+      <ThemeProvider theme={theme}>
+        <ProcessingHistory 
+          fileId={1} 
+          apiBase={apiBase} 
+          onDownload={mockOnDownload}
+          history={[]}
+          setHistory={mockSetHistory}
+        />
+      </ThemeProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/no processing history yet/i)).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(mockSetHistory).toHaveBeenCalledWith([])
+    })
+  })
+
   it('loads and displays history items', async () => {
     const mockHistory = [
       {
@@ -418,7 +442,8 @@ describe('ProcessingHistory', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+        // Multiple items render "Rows Deleted", so use the *AllBy* variant
+        expect(screen.getAllByText(/rows deleted/i).length).toBeGreaterThan(0)
       })
 
       // Find delete button (🗑️ emoji)
@@ -464,7 +489,7 @@ describe('ProcessingHistory', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText(/rows deleted/i)).toBeInTheDocument()
+        expect(screen.getAllByText(/rows deleted/i).length).toBeGreaterThan(0)
       })
 
       const deleteButtons = screen.getAllByTitle(/delete this history item/i)
@@ -482,6 +507,98 @@ describe('ProcessingHistory', () => {
           expect(global.alert).toHaveBeenCalled()
         })
       }
+    })
+
+    it('uses err.message when delete fails without a server response', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      axios.delete.mockRejectedValue({ message: 'Network Error' })
+      global.confirm = vi.fn(() => true)
+      global.alert = vi.fn()
+
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getAllByText(/rows deleted/i).length).toBeGreaterThan(0)
+      })
+
+      const deleteButtons = screen.getAllByTitle(/delete this history item/i)
+      await act(async () => {
+        fireEvent.click(deleteButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(global.alert).toHaveBeenCalledWith('Failed to delete history item: Network Error')
+      })
+    })
+
+    it('deletes a history item on success and updates local state', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        },
+        {
+          job_id: 2,
+          processed_at: '2024-01-16T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 1
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      axios.delete.mockResolvedValue({ data: {} })
+      global.confirm = vi.fn(() => true)
+
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+            isAdmin={true}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getAllByText(/rows deleted/i).length).toBeGreaterThan(0)
+      })
+
+      const deleteButtons = screen.getAllByTitle(/delete this history item/i)
+      expect(deleteButtons.length).toBeGreaterThan(0)
+
+      await act(async () => {
+        fireEvent.click(deleteButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(axios.delete).toHaveBeenCalled()
+      })
+
+      await waitFor(() => {
+        expect(mockSetHistory).toHaveBeenCalledWith([mockHistory[1]])
+      })
     })
 
     it('cancels clear history when confirmation is rejected', async () => {
@@ -569,6 +686,94 @@ describe('ProcessingHistory', () => {
       // Should show alert on error
       await waitFor(() => {
         expect(global.alert).toHaveBeenCalled()
+      })
+    })
+
+    it('clears history on success and shows deleted count', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      axios.delete.mockResolvedValue({ data: { deleted_count: 1 } })
+      global.confirm = vi.fn(() => true)
+      global.alert = vi.fn()
+
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+            isAdmin={true}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/clear all history/i)).toBeInTheDocument()
+      })
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(/clear all history/i))
+      })
+
+      await waitFor(() => {
+        expect(axios.delete).toHaveBeenCalled()
+      })
+
+      await waitFor(() => {
+        expect(mockSetHistory).toHaveBeenCalledWith([])
+      })
+
+      await waitFor(() => {
+        expect(global.alert).toHaveBeenCalledWith('Cleared 1 history items')
+      })
+    })
+
+    it('uses err.message when clear history fails without a server response', async () => {
+      const mockHistory = [
+        {
+          job_id: 1,
+          processed_at: '2024-01-15T10:30:00Z',
+          status: 'completed',
+          deleted_rows: 5
+        }
+      ]
+      axios.get.mockResolvedValue({ data: { history: mockHistory } })
+      axios.delete.mockRejectedValue({ message: 'Network Error' })
+      global.confirm = vi.fn(() => true)
+      global.alert = vi.fn()
+
+      render(
+        <ThemeProvider theme={theme}>
+          <ProcessingHistory 
+            fileId={1} 
+            apiBase={apiBase} 
+            onDownload={mockOnDownload}
+            history={mockHistory}
+            setHistory={mockSetHistory}
+            isAdmin={true}
+          />
+        </ThemeProvider>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/clear all history/i)).toBeInTheDocument()
+      })
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(/clear all history/i))
+      })
+
+      await waitFor(() => {
+        expect(global.alert).toHaveBeenCalledWith('Failed to clear history: Network Error')
       })
     })
   })
