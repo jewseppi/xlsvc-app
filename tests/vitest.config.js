@@ -24,9 +24,7 @@ export default defineConfig({
         '**/dist/',
         '**/build/',
         '**/*.test.{js,jsx,ts,tsx}',
-        '**/*.spec.{js,jsx,ts,tsx}',
-        'src/main.jsx',
-        'tests/vitest.setup.js'
+        '**/*.spec.{js,jsx,ts,tsx}'
       ],
       thresholds: {
         lines: 100,
