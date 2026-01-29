@@ -13,6 +13,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/vitest.setup.js'],
+    reporters: ['default', 'junit'],
+    outputFile: { junit: 'test-results/vitest-results.xml' },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -28,10 +30,10 @@ export default defineConfig({
         '**/*.spec.{js,jsx,ts,tsx}'
       ],
       thresholds: {
-        lines: 90,
-        functions: 94,
-        branches: 94,
-        statements: 90
+        lines: 100,
+        functions: 100,
+        branches: 100,
+        statements: 100
       }
     },
     include: ['tests/unit/**/*.{test,spec}.{js,jsx,ts,tsx}'],

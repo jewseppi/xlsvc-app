@@ -14,7 +14,7 @@
     "test:unit:coverage": "vitest run --coverage --config tests/vitest.config.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:ci": "playwright test --reporter=html"
+    "test:e2e:ci": "playwright test"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
