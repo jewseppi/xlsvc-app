@@ -28,3 +28,6 @@ playwright-report/
 test-results.json
 test-results.xml
 test-results/
+
+# Coverage (generated in CI as artifacts)
+coverage/
