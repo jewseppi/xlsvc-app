@@ -512,9 +512,9 @@ describe('AdminPanel', () => {
       const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /delete/i }), { timeout: 5000 })
       await userEvent.click(deleteButtons[0])
 
-      // Confirm modal appears
+      // Confirm modal appears (query button to avoid multiple "Delete User" text nodes)
       await waitFor(() => {
-        expect(screen.getByText(/delete user/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /delete user/i })).toBeInTheDocument()
       }, { timeout: 5000 })
 
       await userEvent.click(screen.getByRole('button', { name: /delete user/i }))
@@ -574,7 +574,7 @@ describe('AdminPanel', () => {
       await userEvent.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(screen.getByText(/delete user/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /delete user/i })).toBeInTheDocument()
       }, { timeout: 5000 })
 
       await userEvent.click(screen.getByRole('button', { name: /delete user/i }))
