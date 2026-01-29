@@ -28,7 +28,37 @@ export default defineConfig({
   reporter: [
     ['html'],
     ['json', { outputFile: 'test-results.json' }],
-    ['junit', { outputFile: 'test-results.xml' }]
+    ['junit', { outputFile: 'test-results.xml' }],
+    [
+      'monocart-reporter',
+      {
+        name: 'E2E Test Report',
+        outputFile: './playwright-report/index.html',
+        coverage: {
+          entryFilter: (entry) => !entry.url.includes('node_modules'),
+          sourceFilter: (sourcePath) => sourcePath.includes('/src/') && !sourcePath.includes('node_modules'),
+          reports: ['v8', 'console-summary'],
+          onEnd: (coverageResults) => {
+            const thresholds = { lines: 100, functions: 100, branches: 100, statements: 100 };
+            const errors = [];
+            const { summary } = coverageResults;
+            if (summary) {
+              Object.keys(thresholds).forEach((k) => {
+                const pct = summary[k]?.pct ?? 0;
+                if (pct < thresholds[k]) {
+                  errors.push(`E2E coverage threshold for ${k} (${pct}%) not met: ${thresholds[k]}%`);
+                }
+              });
+            }
+            if (errors.length) {
+              const errMsg = errors.join('\n');
+              console.error(errMsg);
+              throw new Error(errMsg);
+            }
+          },
+        },
+      },
+    ],
   ],
   
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

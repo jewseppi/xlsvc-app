@@ -14,7 +14,8 @@
     "test:unit:coverage": "vitest run --coverage --config tests/vitest.config.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:ci": "playwright test"
+    "test:e2e:ci": "playwright test",
+    "test:coverage": "npm run test:unit:coverage && npm run test:e2e:ci"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@playwright/test": "^1.40.0",
+    "monocart-reporter": "^2.9.0",
     "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^16.3.2",

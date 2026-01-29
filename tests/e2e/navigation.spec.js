@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('Navigation and Routing', () => {
   test('should protect /app route when not authenticated', async ({ page }) => {
