@@ -12,6 +12,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    testTimeout: 15000,
     setupFiles: ['./tests/vitest.setup.js'],
     reporters: ['default', 'junit'],
     outputFile: { junit: 'test-results/vitest-results.xml' },

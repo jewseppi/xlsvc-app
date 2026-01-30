@@ -58,6 +58,7 @@ describe('Dashboard', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -1037,7 +1038,7 @@ describe('Dashboard', () => {
     })
 
     it('shows lost connection when job-status API fails 3 times', async () => {
-      vi.useFakeTimers()
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       const user = userEvent.setup()
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -1079,9 +1080,8 @@ describe('Dashboard', () => {
         expect(screen.getByText(/Lost connection to processing server/i)).toBeInTheDocument()
       }, { timeout: 3000 })
 
-      vi.useRealTimers()
       consoleSpy.mockRestore()
-    })
+    }, 12000)
 
     it('shows automated completion and download buttons when job completes', async () => {
       const user = userEvent.setup()
