@@ -286,6 +286,37 @@ describe('Dashboard', () => {
       })
     })
 
+    it('invokes onUploadProgress during upload', async () => {
+      await renderDashboard()
+
+      const file = new File(['x'], 'progress.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+
+      let progressCalled = false
+      axios.post.mockImplementation((url, data, config) => {
+        if (config?.onUploadProgress) {
+          config.onUploadProgress({ loaded: 50, total: 100 })
+          progressCalled = true
+        }
+        return Promise.resolve({ data: { file_id: 4, filename: 'progress.xlsx' } })
+      })
+
+      const fileInput = document.querySelector('input[type="file"]')
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [file] } })
+      })
+
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/upload'),
+          expect.any(FormData),
+          expect.objectContaining({ onUploadProgress: expect.any(Function) })
+        )
+        expect(progressCalled).toBe(true)
+      })
+    })
+
     it('handles duplicate file upload', async () => {
       await renderDashboard()
       
@@ -551,20 +582,145 @@ describe('Dashboard', () => {
       })
     })
 
+    it('shows deletion report download when manual processing returns report', async () => {
+      const user = userEvent.setup()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: mockFiles } })
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockResolvedValueOnce({
+        data: {
+          processed_file_id: 10,
+          download_filename: 'processed.xlsx',
+          deleted_rows: 5,
+          processing_log: ['Processed sheet 1'],
+          total_rows_to_delete: 5,
+          sheets_affected: ['Sheet1'],
+          hasRowsToDelete: true,
+          downloads: {
+            macro: { file_id: 11, filename: 'macro.bas' },
+            instructions: { file_id: 12, filename: 'instructions.txt' },
+            report: { file_id: 13, filename: 'deletion_report.xlsx' }
+          }
+        }
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+      await waitFor(() => { expect(screen.getByRole('button', { name: /Generate Macro/i })).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByRole('button', { name: /Generate Macro/i })) })
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Download Deletion Report \(\.xlsx\)/i })).toBeInTheDocument()
+      })
+
+      // Cover manual download buttons: macro, instructions, report
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Download Macro \(\.bas\)/i }))
+      })
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Download Instructions \(\.txt\)/i }))
+      })
+      const reportButton = screen.getByRole('button', { name: /Download Deletion Report \(\.xlsx\)/i })
+      await act(async () => { await user.click(reportButton) })
+      expect(reportButton).toBeInTheDocument()
+    })
+
+    it('shows File is Clean when manual processing has no rows to delete', async () => {
+      const user = userEvent.setup()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: mockFiles } })
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockResolvedValueOnce({
+        data: {
+          processed_file_id: 10,
+          download_filename: 'processed.xlsx',
+          deleted_rows: 0,
+          processing_log: ['No rows to delete'],
+          total_rows_to_delete: 0,
+          sheets_affected: [],
+          hasRowsToDelete: false,
+          downloads: {}
+        }
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+      await waitFor(() => { expect(screen.getByRole('button', { name: /Generate Macro/i })).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByRole('button', { name: /Generate Macro/i })) })
+
+      await waitFor(() => {
+        expect(screen.getByText(/File is Clean!/i)).toBeInTheDocument()
+        expect(screen.getByText(/No rows found that need deletion/i)).toBeInTheDocument()
+      })
+    })
+
+    it('handles processing error when process API rejects', async () => {
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: mockFiles } })
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/process/')) {
+          return Promise.reject({ response: { data: { error: 'Processing failed' } } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+      await waitFor(() => { expect(screen.getByRole('button', { name: /Generate Macro/i })).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByRole('button', { name: /Generate Macro/i })) })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Processing failed!/i)).toBeInTheDocument()
+      })
+
+      consoleSpy.mockRestore()
+    })
+
     it('handles processing error by mocking axios rejection', async () => {
       // Test that axios.post can be configured to reject
-      // The actual error handling UI is tested through integration
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      
       axios.post.mockRejectedValueOnce({
         response: { data: { error: 'Processing failed' } }
       })
-
-      // Verify the mock is set up correctly
       await expect(axios.post('/test')).rejects.toEqual({
         response: { data: { error: 'Processing failed' } }
       })
-
       consoleSpy.mockRestore()
     })
   })
@@ -585,6 +741,32 @@ describe('Dashboard', () => {
   })
 
   describe('Generated Files Integration', () => {
+    it('handles loadGeneratedFiles API error when selecting file', async () => {
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.reject(new Error('Generated files failed'))
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: mockFiles } })
+        return Promise.resolve({ data: {} })
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Error loading generated files:', expect.any(Error))
+      }, { timeout: 3000 })
+
+      consoleSpy.mockRestore()
+    })
+
     it('shows generated files section when file is selected', async () => {
       const user = userEvent.setup()
       
@@ -852,6 +1034,104 @@ describe('Dashboard', () => {
           expect.any(Object)
         )
       })
+    })
+
+    it('shows lost connection when job-status API fails 3 times', async () => {
+      vi.useFakeTimers()
+      const user = userEvent.setup()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files') && !url.includes('/generated') && !url.includes('/history')) {
+          return Promise.resolve({ data: { files: mockFiles } })
+        }
+        if (url.includes('/job-status/')) {
+          return Promise.reject(new Error('Network error'))
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockResolvedValueOnce({
+        data: { job_id: 'job-fail', status: 'processing', estimated_time: '2-3 minutes' }
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+      await waitFor(() => { expect(screen.getByRole('button', { name: /Automated Processing/i })).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByRole('button', { name: /Automated Processing/i })) })
+
+      // First poll runs immediately and rejects -> setTimeout(poll, 5000)
+      await vi.advanceTimersByTimeAsync(5500)
+      // Second poll runs and rejects -> setTimeout(poll, 7500)
+      await vi.advanceTimersByTimeAsync(8000)
+      // Third poll runs and rejects -> consecutiveErrors >= 3 -> "Lost connection" set
+      await vi.advanceTimersByTimeAsync(8000)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Lost connection to processing server/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      vi.useRealTimers()
+      consoleSpy.mockRestore()
+    })
+
+    it('shows automated completion and download buttons when job completes', async () => {
+      const user = userEvent.setup()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files') && !url.includes('/generated') && !url.includes('/history')) {
+          return Promise.resolve({ data: { files: mockFiles } })
+        }
+        if (url.includes('/job-status/')) {
+          return Promise.resolve({
+            data: {
+              status: 'completed',
+              download_file_id: 20,
+              download_filename: 'processed.xlsx',
+              report_file_id: 21,
+              report_filename: 'report.xlsx'
+            }
+          })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockResolvedValueOnce({
+        data: { job_id: 'job-456', status: 'processing', estimated_time: '2-3 minutes' }
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+      await waitFor(() => { expect(screen.getByRole('button', { name: /Automated Processing/i })).toBeInTheDocument() })
+
+      await act(async () => { await user.click(screen.getByRole('button', { name: /Automated Processing/i })) })
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Download Processed File/i })).toBeInTheDocument()
+      }, { timeout: 5000 })
+
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Download Processed File/i }))
+      })
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /View Deleted Rows/i }))
+      })
+      expect(screen.getByText(/Automated Processing Complete/i)).toBeInTheDocument()
     })
   })
 

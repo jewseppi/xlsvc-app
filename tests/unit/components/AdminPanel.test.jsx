@@ -611,6 +611,71 @@ describe('AdminPanel', () => {
       }, { timeout: 10000 })
     }, { timeout: 20000 })
 
+    it('cleanup refreshes generated files when file is selected', async () => {
+      const filesWithSelection = [
+        { id: 1, original_filename: 'test-file.xlsx', file_size: 51200, upload_date: '2024-01-15T10:30:00Z', processed: false }
+      ]
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: filesWithSelection } })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        return Promise.resolve({ data: {} })
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument() }, { timeout: 10000 })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+
+      await act(async () => { await userEvent.click(screen.getByText('test-file.xlsx')) })
+
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/cleanup-files')) {
+          return Promise.resolve({ data: { removed_count: 1 } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const cleanupButton = await waitFor(() =>
+        screen.getByRole('button', { name: /cleanup missing files/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(cleanupButton)
+
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/cleanup-files'), {}, expect.any(Object))
+        expect(window.alert).toHaveBeenCalledWith('Cleaned up 1 missing files')
+      }, { timeout: 5000 })
+    })
+
+    it('handles cleanup API error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      await renderAdminPanel()
+
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/cleanup-files')) {
+          return Promise.reject({ response: { data: { error: 'Cleanup failed' } } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const cleanupButton = await waitFor(() =>
+        screen.getByRole('button', { name: /cleanup missing files/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(cleanupButton)
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith('Cleanup failed: Cleanup failed')
+      }, { timeout: 5000 })
+
+      consoleSpy.mockRestore()
+    })
+
     it('runs debug storage tool', async () => {
       await renderAdminPanel()
 
@@ -661,6 +726,38 @@ describe('AdminPanel', () => {
         )
       }, { timeout: 10000 })
     }, { timeout: 20000 })
+
+    it('handles debug storage API error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      await renderAdminPanel()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/debug/storage')) {
+          return Promise.reject(new Error('Debug storage failed'))
+        }
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        return Promise.resolve({ data: {} })
+      })
+
+      const debugButton = await waitFor(() =>
+        screen.getByRole('button', { name: /debug storage/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(debugButton)
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Debug error:', expect.any(Error))
+      }, { timeout: 5000 })
+
+      consoleSpy.mockRestore()
+    })
 
     it('runs detailed GitHub test tool', async () => {
       await renderAdminPanel()
