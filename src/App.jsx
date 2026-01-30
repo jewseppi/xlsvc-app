@@ -119,10 +119,8 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// API Configuration
-const API_BASE = import.meta.env.DEV
-  ? "http://127.0.0.1:5000/api"
-  : "https://api.xlsvc.jsilverman.ca/api";
+import { API_BASE } from "./apiBase";
+import { getApiErrorMessage } from "./utils/getApiErrorMessage";
 
 // Error Boundary Fallback Component
 function ErrorFallback({error, resetErrorBoundary}) {
@@ -591,7 +589,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
       setUsers(response.data.users);
     } catch (err) {
       console.error("Error loading users:", err);
-      setErrorMessage(err.response?.data?.error || "Failed to load users");
+      setErrorMessage(getApiErrorMessage(err, "Failed to load users"));
     } finally {
       setLoadingUsers(false);
     }
@@ -607,11 +605,12 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
       setDeleteConfirm({ user, details: response.data });
     } catch (err) {
       console.error("Error fetching user details:", err);
-      setErrorMessage(err.response?.data?.error || "Failed to load user details");
+      setErrorMessage(getApiErrorMessage(err, "Failed to load user details"));
     }
   };
 
   const confirmDeleteUser = async () => {
+    /* v8 ignore next 1 - defensive guard, not reachable via UI */
     if (!deleteConfirm) return;
 
     try {
@@ -625,7 +624,7 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
       loadUsers(); // Refresh list
     } catch (err) {
       console.error("Error deleting user:", err);
-      setErrorMessage(err.response?.data?.error || "Failed to delete user");
+      setErrorMessage(getApiErrorMessage(err, "Failed to delete user"));
       setDeleteConfirm(null);
     }
   };
@@ -1052,7 +1051,10 @@ function Dashboard({ user, logout }) {
   const macrosExist = selectedFile ? generatedFiles.macros.length > 0 : false;
 
   const handleAutomatedProcessing = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      alert("Please select a file first");
+      return;
+    }
 
     setJobStatus("processing");
     setProcessingLog(["Starting automated processing via GitHub Actions..."]);
@@ -1400,7 +1402,10 @@ function Dashboard({ user, logout }) {
   };
 
   const handleProcessFile = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      alert("Please select a file first");
+      return;
+    }
 
     setProcessing(true);
     setProcessingLog(["Starting file processing..."]);
@@ -1688,44 +1693,48 @@ function Dashboard({ user, logout }) {
                       filterRules={filterRules}
                       setFilterRules={setFilterRules}
                     />
-
-                    <ProcessDescription>
-                      Choose your processing method:
-                    </ProcessDescription>
-
-                    {/* Manual Processing Button */}
-                    <Button
-                      variant="secondary"
-                      onClick={handleProcessFile}
-                      disabled={processing || jobStatus === "processing" || macrosExist}
-                      style={{ width: "100%", marginTop: "1rem" }}
-                    >
-                      {processing
-                        ? "Analyzing..."
-                        : "📋 Generate Macro & Instructions"}
-                    </Button>
-
-                    {/* Automated Processing Button */}
-                    <Button
-                      variant="primary"
-                      onClick={handleAutomatedProcessing}
-                      disabled={
-                        processing ||
-                        jobStatus === "processing" ||
-                        filtersMatchExisting
-                      }
-                      style={{ width: "100%", marginTop: "0.5rem" }}
-                    >
-                      {jobStatus === "processing"
-                        ? "🔄 Processing on GitHub..."
-                        : "⚡ Automated Processing"}
-                    </Button>
                   </ProcessingSection>
                 ) : (
                   <EmptyState>
                     <p>Select a file from the left to start analysis</p>
                   </EmptyState>
                 )}
+
+                <ProcessDescription>
+                  Choose your processing method:
+                </ProcessDescription>
+
+                {/* Manual Processing Button - shows alert when no file selected */}
+                <Button
+                  variant="secondary"
+                  onClick={handleProcessFile}
+                  disabled={
+                    processing ||
+                    jobStatus === "processing" ||
+                    macrosExist
+                  }
+                  style={{ width: "100%", marginTop: "1rem" }}
+                >
+                  {processing
+                    ? "Analyzing..."
+                    : "📋 Generate Macro & Instructions"}
+                </Button>
+
+                {/* Automated Processing Button - shows alert when no file selected */}
+                <Button
+                  variant="primary"
+                  onClick={handleAutomatedProcessing}
+                  disabled={
+                    processing ||
+                    jobStatus === "processing" ||
+                    filtersMatchExisting
+                  }
+                  style={{ width: "100%", marginTop: "0.5rem" }}
+                >
+                  {jobStatus === "processing"
+                    ? "🔄 Processing on GitHub..."
+                    : "⚡ Automated Processing"}
+                </Button>
               </CardBody>
             </ContentCard>
 

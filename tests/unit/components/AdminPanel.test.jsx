@@ -23,6 +23,8 @@ Object.assign(navigator, {
 describe('AdminPanel', () => {
   const mockAdminUser = { id: 2, email: 'admin@example.com', is_admin: true }
   
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
   const mockInvitations = [
     {
       id: 1,
@@ -39,6 +41,15 @@ describe('AdminPanel', () => {
       expires_at: '2024-01-17T10:00:00Z'
     }
   ]
+  const mockInvitationOneDay = [
+    {
+      id: 3,
+      email: 'expires-tomorrow@example.com',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      expires_at: tomorrow.toISOString()
+    }
+  ]
 
   const mockUsers = [
     {
@@ -53,6 +64,11 @@ describe('AdminPanel', () => {
       is_admin: true,
       created_at: '2024-01-01T10:00:00Z'
     }
+  ]
+
+  const mockUsersWithFileCounts = [
+    { ...mockUsers[0], file_count: 1 },
+    { ...mockUsers[1], file_count: 2 }
   ]
 
   beforeEach(() => {
@@ -154,6 +170,23 @@ describe('AdminPanel', () => {
   })
 
   describe('Invitation Management', () => {
+    it('shows singular "day" when invitation expires in 1 day', async () => {
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        if (url.includes('/admin/invitations')) {
+          return Promise.resolve({ data: { invitations: mockInvitationOneDay } })
+        }
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        return Promise.resolve({ data: {} })
+      })
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument() }, { timeout: 10000 })
+      await waitFor(() => {
+        expect(screen.getByText(/1 day\b/)).toBeInTheDocument()
+      }, { timeout: 5000 })
+    }, { timeout: 10000 })
+
     it('loads invitations on mount', async () => {
       await renderAdminPanel()
       
@@ -205,7 +238,7 @@ describe('AdminPanel', () => {
       })
 
       const emailInput = screen.getByLabelText(/email address/i)
-      const submitButton = screen.getByRole('button', { name: /generate/i })
+      const submitButton = screen.getByRole('button', { name: /generate invitation/i })
 
       await userEvent.type(emailInput, newInvitation.email)
       await userEvent.click(submitButton)
@@ -233,7 +266,7 @@ describe('AdminPanel', () => {
       })
 
       const emailInput = screen.getByLabelText(/email address/i)
-      const submitButton = screen.getByRole('button', { name: /generate/i })
+      const submitButton = screen.getByRole('button', { name: /generate invitation/i })
 
       await userEvent.type(emailInput, 'existing@example.com')
       await userEvent.click(submitButton)
@@ -297,6 +330,87 @@ describe('AdminPanel', () => {
       }, { timeout: 10000 })
     }, { timeout: 20000 })
 
+    it('shows error when revoke invitation fails', async () => {
+      await renderAdminPanel()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/admin/invitations') && url.includes('/expire')) {
+          return Promise.reject({ response: { data: { error: 'Revoke failed' } } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const revokeButton = await waitFor(() =>
+        screen.getByRole('button', { name: /revoke/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(revokeButton)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Revoke failed|Failed to revoke invitation/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+
+      consoleSpy.mockRestore()
+    }, { timeout: 20000 })
+
+    it('shows Failed to revoke invitation when expire rejects with no response', async () => {
+      await renderAdminPanel()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/admin/invitations') && url.includes('/expire')) {
+          return Promise.reject({})
+        }
+        return Promise.resolve({ data: {} })
+      })
+      const revokeButton = await waitFor(() => screen.getByRole('button', { name: /revoke/i }), { timeout: 10000 })
+      await userEvent.click(revokeButton)
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to revoke invitation/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+    }, { timeout: 20000 })
+
+    it('shows Failed to generate invitation when post rejects with no response', async () => {
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        return Promise.resolve({ data: {} })
+      })
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/admin/create-invitation')) {
+          return Promise.reject({})
+        }
+        return Promise.resolve({ data: {} })
+      })
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument() }, { timeout: 10000 })
+      const emailInput = screen.getByLabelText(/email address/i)
+      await userEvent.type(emailInput, 'new@example.com')
+      await userEvent.click(screen.getByRole('button', { name: /generate invitation/i }))
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to generate invitation/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+    }, { timeout: 15000 })
+
+    it('shows Failed to load users when users fetch rejects with no response', async () => {
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: [] } })
+        if (url.includes('/admin/users')) {
+          return Promise.reject({})
+        }
+        return Promise.resolve({ data: {} })
+      })
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument() }, { timeout: 10000 })
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to load users/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+    }, { timeout: 20000 })
+
     it('does not expire invitation when confirmation is cancelled', async () => {
       await renderAdminPanel()
 
@@ -358,7 +472,7 @@ describe('AdminPanel', () => {
       })
 
       const emailInput = await waitFor(() => screen.getByLabelText(/email address/i), { timeout: 10000 })
-      const submitButton = await waitFor(() => screen.getByRole('button', { name: /generate/i }), { timeout: 10000 })
+      const submitButton = await waitFor(() => screen.getByRole('button', { name: /generate invitation/i }), { timeout: 10000 })
 
       await userEvent.type(emailInput, 'newuser@example.com')
       await userEvent.click(submitButton)
@@ -466,6 +580,23 @@ describe('AdminPanel', () => {
       }
     }, { timeout: 20000 })
 
+    it('shows singular "file" when user has file_count 1', async () => {
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsersWithFileCounts } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument() }, { timeout: 10000 })
+      await waitFor(() => {
+        expect(screen.getByText(/1 file\b/)).toBeInTheDocument()
+      }, { timeout: 5000 })
+    }, { timeout: 10000 })
+
     it('deletes user successfully', async () => {
       await renderAdminPanel()
 
@@ -528,6 +659,42 @@ describe('AdminPanel', () => {
             })
           })
         )
+      }, { timeout: 5000 })
+    }, { timeout: 10000 })
+
+    it('shows singular file and job in delete confirmation when count is 1', async () => {
+      await renderAdminPanel()
+
+      const userDetails = {
+        file_count: 1,
+        job_count: 1
+      }
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/admin/users/1')) {
+          return Promise.resolve({ data: userDetails })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
+        }
+        if (url.includes('/admin/invitations')) {
+          return Promise.resolve({ data: { invitations: mockInvitations } })
+        }
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: [] } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /^Delete$/i }), { timeout: 5000 })
+      await userEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByText(/1 file\b/)).toBeInTheDocument()
+        expect(screen.getByText(/1 processing job\b/)).toBeInTheDocument()
       }, { timeout: 5000 })
     }, { timeout: 10000 })
 
@@ -676,6 +843,30 @@ describe('AdminPanel', () => {
       consoleSpy.mockRestore()
     })
 
+    it('cleanup shows Unknown error when cleanup fails with no response', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      await renderAdminPanel()
+
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/cleanup-files')) {
+          return Promise.reject(new Error('Network error'))
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const cleanupButton = await waitFor(() =>
+        screen.getByRole('button', { name: /cleanup missing files/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(cleanupButton)
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith('Cleanup failed: Unknown error')
+      }, { timeout: 5000 })
+
+      consoleSpy.mockRestore()
+    })
+
     it('runs debug storage tool', async () => {
       await renderAdminPanel()
 
@@ -816,6 +1007,201 @@ describe('AdminPanel', () => {
         )
       }, { timeout: 10000 })
     }, { timeout: 20000 })
+
+    it('shows error alert when detailed GitHub test fails', async () => {
+      await renderAdminPanel()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/test-github')) {
+          return Promise.resolve({ data: { status: 'ok' } })
+        }
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: [] } })
+        }
+        if (url.includes('/admin/invitations')) {
+          return Promise.resolve({ data: { invitations: mockInvitations } })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const dispatchError = { response: { data: { error: 'Dispatch failed' } } }
+      axios.post.mockRejectedValueOnce(dispatchError)
+
+      const githubButton = await waitFor(() =>
+        screen.getByRole('button', { name: /test github connection/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(githubButton)
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          expect.stringMatching(/Test failed:.*Dispatch failed/)
+        )
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
+
+    it('shows err.message when detailed GitHub test fails with no response', async () => {
+      await renderAdminPanel()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/test-github')) {
+          return Promise.reject(new Error('Network error'))
+        }
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockAdminUser })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: [] } })
+        }
+        if (url.includes('/admin/invitations')) {
+          return Promise.resolve({ data: { invitations: mockInvitations } })
+        }
+        if (url.includes('/admin/users')) {
+          return Promise.resolve({ data: { users: mockUsers } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const githubButton = await waitFor(() =>
+        screen.getByRole('button', { name: /test github connection/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(githubButton)
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          expect.stringMatching(/Test failed:.*Network error/)
+        )
+      }, { timeout: 10000 })
+    }, { timeout: 20000 })
+
+    it('clears success message when copy timeout runs and prev message did not include generated', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      await renderAdminPanel()
+
+      axios.post.mockResolvedValueOnce({
+        data: { email: 'copy@example.com', invitation_url: 'https://example.com/invite/abc' }
+      })
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        return Promise.resolve({ data: {} })
+      })
+
+      const emailInput = screen.getByLabelText(/email address/i)
+      const submitButton = screen.getByRole('button', { name: /generate invitation/i })
+      await userEvent.type(emailInput, 'copy@example.com')
+      await userEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Invitation link generated/i)).toBeInTheDocument()
+      }, { timeout: 10000 })
+
+      const copyButton = await waitFor(() =>
+        screen.getByRole('button', { name: /copy to clipboard/i }),
+        { timeout: 5000 }
+      )
+      await userEvent.click(copyButton)
+      await userEvent.click(copyButton)
+
+      await vi.advanceTimersByTimeAsync(3100)
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Invitation URL copied/i)).not.toBeInTheDocument()
+      }, { timeout: 3000 })
+      vi.useRealTimers()
+    }, { timeout: 20000 })
+
+    it('shows error when fetching user details for delete fails', async () => {
+      await renderAdminPanel()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (url.includes('/admin/users') && url.includes('/1')) {
+          return Promise.reject({ response: { data: { error: 'User not found' } } })
+        }
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        return Promise.resolve({ data: {} })
+      })
+
+      const deleteButton = await waitFor(() =>
+        screen.getByRole('button', { name: /^Delete$/i }),
+        { timeout: 10000 }
+      )
+      await userEvent.click(deleteButton)
+
+      await waitFor(() => {
+        expect(screen.getByText(/User not found|Failed to load user details/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+
+      consoleSpy.mockRestore()
+    }, { timeout: 20000 })
+
+    it('shows Failed to load user details when fetch rejects with no response', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files') && url.includes('/generated')) return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (String(url).includes('/admin/users/1')) return Promise.reject({})
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        return Promise.resolve({ data: {} })
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument(), { timeout: 10000 })
+
+      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /^Delete$/i }), { timeout: 10000 })
+      await userEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to load user details/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+    }, { timeout: 20000 })
+
+    it('shows Failed to delete user when delete API rejects with no response', async () => {
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockAdminUser })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: [] } })
+        if (url.includes('/admin/invitations')) return Promise.resolve({ data: { invitations: mockInvitations } })
+        if (String(url).includes('/admin/users/1')) return Promise.resolve({ data: { file_count: 0, job_count: 0 } })
+        if (url.includes('/admin/users')) return Promise.resolve({ data: { users: mockUsers } })
+        return Promise.resolve({ data: {} })
+      })
+      axios.delete.mockRejectedValue({})
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => expect(screen.getByText(/Admin Panel/i)).toBeInTheDocument(), { timeout: 10000 })
+
+      const deleteButtons = await waitFor(() => screen.getAllByRole('button', { name: /^Delete$/i }), { timeout: 5000 })
+      await userEvent.click(deleteButtons[0])
+      await waitFor(() => { expect(screen.getByRole('button', { name: /delete user/i })).toBeInTheDocument() }, { timeout: 5000 })
+      await userEvent.click(screen.getByRole('button', { name: /delete user/i }))
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to delete user/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+    }, { timeout: 15000 })
   })
 
   describe('Error Handling', () => {

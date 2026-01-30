@@ -600,6 +600,34 @@ describe('AuthPage', () => {
       })
     })
 
+    it('shows error when submitting registration with invalid password', async () => {
+      const user = userEvent.setup()
+      window.location.search = '?token=valid-invitation&register=1'
+
+      axios.post.mockResolvedValueOnce({ data: { valid: true, email: 'invited@example.com' } })
+
+      await act(async () => {
+        render(<App />)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
+      })
+
+      const passwordInput = screen.getByLabelText(/password/i)
+      await act(async () => {
+        await user.type(passwordInput, 'a')
+      })
+
+      await act(async () => {
+        fireEvent.submit(passwordInput.closest('form'))
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Password does not meet all requirements/i)).toBeInTheDocument()
+      })
+    })
+
     it('stores token after successful registration', async () => {
       const user = userEvent.setup()
       window.location.search = '?token=valid-invitation&register=1'
