@@ -657,7 +657,7 @@ describe('Dashboard', () => {
       await act(async () => { await user.click(screen.getByRole('button', { name: /Generate Macro/i })) })
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Download Deletion Report \(\.xlsx\)/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /Download Macro Deletion Report \(\.xlsx\)/i })).toBeInTheDocument()
       })
 
       // Cover manual download buttons: macro, instructions, report
@@ -667,7 +667,7 @@ describe('Dashboard', () => {
       await act(async () => {
         await user.click(screen.getByRole('button', { name: /Download Instructions \(\.txt\)/i }))
       })
-      const reportButton = screen.getByRole('button', { name: /Download Deletion Report \(\.xlsx\)/i })
+      const reportButton = screen.getByRole('button', { name: /Download Macro Deletion Report \(\.xlsx\)/i })
       await act(async () => { await user.click(reportButton) })
       expect(reportButton).toBeInTheDocument()
     })

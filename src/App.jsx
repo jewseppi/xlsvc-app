@@ -1929,7 +1929,7 @@ function Dashboard({ user, logout }) {
                                   marginBottom: "0.5rem",
                                 }}
                               >
-                                📊 Deletion Report
+                                📊 Deletion Preview (Macro)
                               </h5>
                               <p
                                 style={{
@@ -1938,7 +1938,7 @@ function Dashboard({ user, logout }) {
                                   color: "#9ca3af",
                                 }}
                               >
-                                Excel file showing all rows that will be deleted
+                                Preview of rows that will be deleted when you run the macro
                               </p>
                               <Button
                                 variant="secondary"
@@ -1950,7 +1950,7 @@ function Dashboard({ user, logout }) {
                                 }
                                 style={{ width: "100%" }}
                               >
-                                Download Deletion Report (.xlsx)
+                                Download Macro Deletion Report (.xlsx)
                               </Button>
                             </div>
                           )}
