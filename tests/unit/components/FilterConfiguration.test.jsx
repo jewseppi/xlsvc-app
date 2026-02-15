@@ -655,4 +655,122 @@ describe('FilterConfiguration', () => {
       expect(lastCall[0][0].column).toBe('A1B2')
     })
   })
+
+  describe('Columns to Remove', () => {
+    let mockSetColumnsToRemove
+
+    beforeEach(() => {
+      mockSetColumnsToRemove = vi.fn()
+    })
+
+    const renderWithColumns = (columnsToRemove = [], filterRules = null) => {
+      return renderWithTheme(
+        <FilterConfiguration
+          filterRules={filterRules || getDefaultFilterRules()}
+          setFilterRules={mockSetFilterRules}
+          columnsToRemove={columnsToRemove}
+          setColumnsToRemove={mockSetColumnsToRemove}
+        />
+      )
+    }
+
+    it('renders columns to remove section when props provided', () => {
+      renderWithColumns(['B', 'D'])
+      expect(screen.getByText('Columns to Remove')).toBeInTheDocument()
+      expect(screen.getByText('B')).toBeInTheDocument()
+      expect(screen.getByText('D')).toBeInTheDocument()
+    })
+
+    it('does not render columns section when props missing', () => {
+      renderWithTheme(
+        <FilterConfiguration
+          filterRules={getDefaultFilterRules()}
+          setFilterRules={mockSetFilterRules}
+        />
+      )
+      expect(screen.queryByText('Columns to Remove')).not.toBeInTheDocument()
+    })
+
+    it('removes a column tag when X clicked', () => {
+      renderWithColumns(['B', 'D'])
+      const removeBtn = screen.getByLabelText('Remove column B')
+      fireEvent.click(removeBtn)
+      expect(mockSetColumnsToRemove).toHaveBeenCalledWith(['D'])
+    })
+
+    it('adds column via Enter key', () => {
+      renderWithColumns([])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: 'C' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      expect(mockSetColumnsToRemove).toHaveBeenCalledWith(['C'])
+    })
+
+    it('does not add invalid column via Enter', () => {
+      renderWithColumns([])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: '123' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
+    })
+
+    it('does not add duplicate column via Enter', () => {
+      renderWithColumns(['B'])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: 'B' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
+    })
+
+    it('ignores non-Enter keys', () => {
+      renderWithColumns([])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: 'C' } })
+      fireEvent.keyDown(input, { key: 'a' })
+      expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
+    })
+
+    it('adds column via Add Column button', () => {
+      renderWithColumns([])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: 'Z' } })
+      const addBtn = screen.getByText('+ Add Column')
+      fireEvent.click(addBtn)
+      expect(mockSetColumnsToRemove).toHaveBeenCalledWith(['Z'])
+    })
+
+    it('does not add invalid column via button', () => {
+      renderWithColumns([])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: '' } })
+      const addBtn = screen.getByText('+ Add Column')
+      fireEvent.click(addBtn)
+      expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
+    })
+
+    it('does not add duplicate column via button', () => {
+      renderWithColumns(['A'])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: 'A' } })
+      const addBtn = screen.getByText('+ Add Column')
+      fireEvent.click(addBtn)
+      expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
+    })
+
+    it('uppercases input when adding via button', () => {
+      renderWithColumns([])
+      const input = screen.getByPlaceholderText('e.g., B')
+      fireEvent.change(input, { target: { value: 'c' } })
+      const addBtn = screen.getByText('+ Add Column')
+      fireEvent.click(addBtn)
+      expect(mockSetColumnsToRemove).toHaveBeenCalledWith(['C'])
+    })
+
+    it('renders updated info text', () => {
+      renderWithColumns([])
+      expect(screen.getByText(/empty or zero/i)).toBeInTheDocument()
+      // "skipped" appears in the info text about Column A
+      expect(screen.getByText(/skipped/i)).toBeInTheDocument()
+    })
+  })
 })

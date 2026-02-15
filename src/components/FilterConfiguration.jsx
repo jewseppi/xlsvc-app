@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { Button, Input, Label } from "../styled/BaseComponents";
 
@@ -84,7 +84,58 @@ const InfoText = styled.p`
   }
 `;
 
-function FilterConfiguration({ filterRules, setFilterRules }) {
+const ColumnsToRemoveSection = styled.div`
+  margin-top: ${(props) => props.theme.spacing.lg};
+  padding: ${(props) => props.theme.spacing.lg};
+  background: ${(props) => props.theme.colors.background.secondary};
+  border: 2px solid ${(props) => props.theme.colors.border.primary};
+  border-radius: ${(props) => props.theme.borderRadius.lg};
+`;
+
+const ColumnsToRemoveTitle = styled.h4`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: ${(props) => props.theme.colors.text.primary};
+  margin-bottom: ${(props) => props.theme.spacing.sm};
+`;
+
+const ColumnTagList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${(props) => props.theme.spacing.sm};
+  margin-top: ${(props) => props.theme.spacing.sm};
+`;
+
+const ColumnTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(props) => props.theme.spacing.xs};
+  padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
+  background: ${(props) => props.theme.colors.accent.primary}22;
+  border: 1px solid ${(props) => props.theme.colors.accent.primary};
+  border-radius: ${(props) => props.theme.borderRadius.md};
+  font-size: 0.8rem;
+  color: ${(props) => props.theme.colors.text.primary};
+`;
+
+const ColumnTagRemove = styled.button`
+  background: none;
+  border: none;
+  color: ${(props) => props.theme.colors.accent.error};
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  line-height: 1;
+`;
+
+const AddColumnRow = styled.div`
+  display: flex;
+  gap: ${(props) => props.theme.spacing.sm};
+  margin-top: ${(props) => props.theme.spacing.sm};
+  align-items: end;
+`;
+
+function FilterConfiguration({ filterRules, setFilterRules, columnsToRemove, setColumnsToRemove }) {
   const addFilterRule = () => {
     setFilterRules([...filterRules, { column: "A", value: "0" }]);
   };
@@ -149,6 +200,65 @@ function FilterConfiguration({ filterRules, setFilterRules }) {
         + Add Filter Rule
       </AddButton>
 
+      {columnsToRemove && setColumnsToRemove && (
+        <ColumnsToRemoveSection>
+          <ColumnsToRemoveTitle>Columns to Remove</ColumnsToRemoveTitle>
+          <InfoText style={{ marginBottom: "0.5rem" }}>
+            Entire columns removed regardless of content (after row deletion).
+          </InfoText>
+          <ColumnTagList>
+            {columnsToRemove.map((col, idx) => (
+              <ColumnTag key={idx}>
+                {col}
+                <ColumnTagRemove
+                  onClick={() =>
+                    setColumnsToRemove(columnsToRemove.filter((_, i) => i !== idx))
+                  }
+                  aria-label={`Remove column ${col}`}
+                >
+                  ✕
+                </ColumnTagRemove>
+              </ColumnTag>
+            ))}
+          </ColumnTagList>
+          <AddColumnRow>
+            <Input
+              id="add-column-input"
+              type="text"
+              placeholder="e.g., B"
+              style={{ maxWidth: "80px" }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const val = e.target.value.trim().toUpperCase();
+                  if (val && /^[A-Z]{1,3}$/.test(val) && !columnsToRemove.includes(val)) {
+                    setColumnsToRemove([...columnsToRemove, val]);
+                    e.target.value = "";
+                  }
+                }
+              }}
+            />
+            <AddButton
+              type="button"
+              variant="ghost"
+              style={{ width: "auto" }}
+              onClick={() => {
+                const input = document.getElementById("add-column-input");
+                if (input) {
+                  const val = input.value.trim().toUpperCase();
+                  if (val && /^[A-Z]{1,3}$/.test(val) && !columnsToRemove.includes(val)) {
+                    setColumnsToRemove([...columnsToRemove, val]);
+                    input.value = "";
+                  }
+                }
+              }}
+            >
+              + Add Column
+            </AddButton>
+          </AddColumnRow>
+        </ColumnsToRemoveSection>
+      )}
+
       <InfoBox>
         <InfoTitle>How it works</InfoTitle>
         <InfoText>
@@ -156,19 +266,14 @@ function FilterConfiguration({ filterRules, setFilterRules }) {
           rules match (AND logic).
           <br />
           <br />
-          <strong>Value "0" or empty</strong>: Matches empty cells, cells with
-          0, "0", or whitespace.
+          All rules check for <strong>empty or zero</strong> values: matches
+          empty cells, cells with 0, "0", or whitespace.
           <br />
           <br />
-          <strong>Any other value</strong>: Matches cells that exactly equal
-          that value (number or text).
+          Rows with an empty Column A are <strong>skipped</strong> (not evaluated).
           <br />
           <br />
           Column can be a letter (A, F, Z) or number (1, 6, 26).
-          <br />
-          <br />
-          <strong>Current defaults</strong>: Columns F, G, H, I checking for
-          empty/zero.
         </InfoText>
       </InfoBox>
     </FilterConfigContainer>

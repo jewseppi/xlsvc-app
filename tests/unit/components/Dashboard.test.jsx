@@ -2294,4 +2294,105 @@ describe('Dashboard', () => {
       }, { timeout: 3000 })
     })
   })
+
+  describe('Profile-based Processing', () => {
+    const mockProfile = {
+      id: 42,
+      name: 'Silver',
+      is_system_template: true,
+      filter_rules: [{ column: 'F', value: '0' }],
+      columns_to_remove: []
+    }
+
+    const setupWithProfile = async () => {
+      const user = userEvent.setup()
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/filter-profiles')) {
+          return Promise.resolve({ data: { profiles: [mockProfile] } })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: mockFiles } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      await act(async () => { render(<App />) })
+
+      await waitFor(() => {
+        expect(screen.getByText('test-file.xlsx')).toBeInTheDocument()
+      })
+
+      // Select a file
+      const fileItem = screen.getByText('test-file.xlsx')
+      await act(async () => { await user.click(fileItem) })
+
+      // Select the profile from dropdown
+      await waitFor(() => {
+        expect(screen.getByLabelText(/filter profile/i)).toBeInTheDocument()
+      })
+      const profileSelect = screen.getByLabelText(/filter profile/i)
+      await act(async () => {
+        fireEvent.change(profileSelect, { target: { value: '42' } })
+      })
+
+      return user
+    }
+
+    it('sends profile_id when profile selected for manual processing', async () => {
+      const user = await setupWithProfile()
+
+      axios.post.mockResolvedValueOnce({
+        data: {
+          processed_file_id: 10,
+          download_filename: 'processed.xlsx',
+          deleted_rows: 5,
+          processing_log: ['Done'],
+          total_rows_to_delete: 5,
+          sheets_affected: ['Sheet1'],
+          hasRowsToDelete: true,
+          downloads: {
+            macro: { file_id: 11, filename: 'macro.bas' },
+            instructions: { file_id: 12, filename: 'instructions.txt' }
+          }
+        }
+      })
+
+      const processButton = screen.getByRole('button', { name: /Generate Macro/i })
+      await act(async () => { await user.click(processButton) })
+
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/process/1'),
+          expect.objectContaining({ profile_id: 42 }),
+          expect.any(Object)
+        )
+      })
+    })
+
+    it('sends profile_id when profile selected for automated processing', async () => {
+      const user = await setupWithProfile()
+
+      axios.post.mockResolvedValueOnce({
+        data: { job_id: 'job-abc', status: 'processing', estimated_time: '2-3 minutes' }
+      })
+
+      const automatedButton = screen.getByRole('button', { name: /Automated Processing/i })
+      await act(async () => { await user.click(automatedButton) })
+
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/process-automated/1'),
+          expect.objectContaining({ profile_id: 42 }),
+          expect.any(Object)
+        )
+      })
+    })
+  })
 })

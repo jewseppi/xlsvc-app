@@ -76,6 +76,7 @@ import {
 } from "./styled/ProcessingComponents";
 
 import FilterConfiguration from "./components/FilterConfiguration";
+import FilterProfiles from "./components/FilterProfiles";
 import ProcessingHistory from "./components/ProcessingHistory";
 import GeneratedFiles from "./components/GeneratedFiles";
 
@@ -1024,6 +1025,8 @@ function Dashboard({ user, logout }) {
     { column: "H", value: "0" },
     { column: "I", value: "0" },
   ]);
+  const [columnsToRemove, setColumnsToRemove] = useState([]);
+  const [selectedProfileId, setSelectedProfileId] = useState(null);
 
   // Check if current filters match any completed job (for automated processing)
   const checkFilterMatch = () => {
@@ -1061,9 +1064,12 @@ function Dashboard({ user, logout }) {
 
     try {
       const token = localStorage.getItem("token");
+      const payload = selectedProfileId
+        ? { profile_id: selectedProfileId }
+        : { filter_rules: filterRules, columns_to_remove: columnsToRemove };
       const response = await axios.post(
         `${API_BASE}/process-automated/${selectedFile.id}`,
-        { filter_rules: filterRules },
+        payload,
         {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 10000, // 10 seconds to start the job
@@ -1413,9 +1419,12 @@ function Dashboard({ user, logout }) {
 
     try {
       const token = localStorage.getItem("token");
+      const payload = selectedProfileId
+        ? { profile_id: selectedProfileId }
+        : { filter_rules: filterRules, columns_to_remove: columnsToRemove };
       const response = await axios.post(
         `${API_BASE}/process/${selectedFile.id}`,
-        { filter_rules: filterRules },
+        payload,
         {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 600000,
@@ -1689,9 +1698,22 @@ function Dashboard({ user, logout }) {
                       {selectedFile.original_filename}
                     </SelectedFileInfo>
 
+                    <FilterProfiles
+                      apiBase={API_BASE}
+                      selectedProfileId={selectedProfileId}
+                      onSelectProfile={setSelectedProfileId}
+                      filterRules={filterRules}
+                      setFilterRules={setFilterRules}
+                      columnsToRemove={columnsToRemove}
+                      setColumnsToRemove={setColumnsToRemove}
+                      isAdmin={user?.is_admin === true}
+                    />
+
                     <FilterConfiguration
                       filterRules={filterRules}
                       setFilterRules={setFilterRules}
+                      columnsToRemove={columnsToRemove}
+                      setColumnsToRemove={setColumnsToRemove}
                     />
                   </ProcessingSection>
                 ) : (
