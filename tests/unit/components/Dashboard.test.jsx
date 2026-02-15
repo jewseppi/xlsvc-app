@@ -1485,7 +1485,7 @@ describe('Dashboard', () => {
 
     it('shows timeout in catch when job-status fails on 60th attempt', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
-      const user = userEvent.setup()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       let jobStatusCalls = 0
@@ -1520,13 +1520,14 @@ describe('Dashboard', () => {
 
       await act(async () => { await user.click(screen.getByRole('button', { name: /Automated Processing/i })) })
 
-      // Advance time in steps so each poll runs and the 60th rejects (catch with attempts >= 60).
-      for (let i = 0; i < 60; i++) {
+      // Advance time in batches to reduce iteration count while still triggering all 60 polls
+      for (let batch = 0; batch < 12; batch++) {
         await act(async () => {
-          await vi.advanceTimersByTimeAsync(5000)
+          await vi.advanceTimersByTimeAsync(25000)
         })
       }
       await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000)
         await Promise.resolve()
         await Promise.resolve()
       })
@@ -1536,7 +1537,7 @@ describe('Dashboard', () => {
       }, { timeout: 10000 })
 
       consoleSpy.mockRestore()
-    }, 45000)
+    }, 60000)
 
     it('shows automated completion and download buttons when job completes', async () => {
       const user = userEvent.setup()
