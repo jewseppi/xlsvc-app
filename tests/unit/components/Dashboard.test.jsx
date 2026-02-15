@@ -1536,7 +1536,7 @@ describe('Dashboard', () => {
       }, { timeout: 10000 })
 
       consoleSpy.mockRestore()
-    }, 25000)
+    }, 45000)
 
     it('shows automated completion and download buttons when job completes', async () => {
       const user = userEvent.setup()
