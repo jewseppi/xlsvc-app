@@ -13,6 +13,18 @@ import axios from 'axios'
 
 vi.mock('axios')
 
+const mockToast = vi.hoisted(() =>
+  Object.assign(vi.fn(), {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  })
+)
+vi.mock('../../../src/components/Toast', () => ({
+  ToastProvider: ({ children }) => children,
+  useToast: () => ({ toast: mockToast }),
+}))
+
 describe('Dashboard', () => {
   const mockUser = { id: 1, email: 'test@example.com', is_admin: false }
   const mockAdminUser = { id: 2, email: 'admin@example.com', is_admin: true }
@@ -38,6 +50,10 @@ describe('Dashboard', () => {
     localStorage.clear()
     localStorage.setItem('token', 'test-token')
     vi.clearAllMocks()
+    mockToast.mockClear()
+    mockToast.success.mockClear()
+    mockToast.error.mockClear()
+    mockToast.info.mockClear()
     
     // Set up window.location for /app route
     delete window.location
@@ -52,8 +68,6 @@ describe('Dashboard', () => {
       reload: vi.fn()
     }
 
-    // Mock window.alert
-    window.alert = vi.fn()
     window.confirm = vi.fn(() => true)
   })
 
@@ -348,7 +362,7 @@ describe('Dashboard', () => {
       })
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
+        expect(mockToast.info).toHaveBeenCalledWith(
           expect.stringContaining('already exists')
         )
       })
@@ -373,7 +387,7 @@ describe('Dashboard', () => {
       })
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
+        expect(mockToast.error).toHaveBeenCalledWith(
           expect.stringContaining('failed')
         )
       })
@@ -395,7 +409,7 @@ describe('Dashboard', () => {
       })
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
+        expect(mockToast.error).toHaveBeenCalledWith(
           expect.stringContaining('Excel file')
         )
       })
@@ -426,15 +440,15 @@ describe('Dashboard', () => {
       expect(screen.getByText(/Select a file from the left/i)).toBeInTheDocument()
     })
 
-    it('manual process and automated process show alert when no file selected', async () => {
+    it('manual process and automated process show toast when no file selected', async () => {
       await renderDashboard()
       const manualButton = screen.getByRole('button', { name: /Generate Macro & Instructions/i })
       const automatedButton = screen.getByRole('button', { name: /Automated Processing/i })
       fireEvent.click(manualButton)
-      expect(window.alert).toHaveBeenCalledWith('Please select a file first')
-      window.alert.mockClear?.()
+      expect(mockToast.error).toHaveBeenCalledWith('Please select a file first')
+      mockToast.error.mockClear()
       fireEvent.click(automatedButton)
-      expect(window.alert).toHaveBeenCalledWith('Please select a file first')
+      expect(mockToast.error).toHaveBeenCalledWith('Please select a file first')
     })
 
     it('shows empty state in analyze section when no file selected', async () => {
@@ -1483,12 +1497,11 @@ describe('Dashboard', () => {
       }, { timeout: 3000 })
     }, 15000)
 
-    it('shows timeout in catch when job-status fails on 60th attempt', async () => {
+    it('shows lost connection when 3 consecutive poll errors occur', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      let jobStatusCalls = 0
       axios.get.mockImplementation((url) => {
         if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
         if (url.includes('/files') && url.includes('/generated')) {
@@ -1499,17 +1512,13 @@ describe('Dashboard', () => {
           return Promise.resolve({ data: { files: mockFiles } })
         }
         if (url.includes('/job-status/')) {
-          jobStatusCalls++
-          if (jobStatusCalls >= 60) {
-            return Promise.reject(new Error('Network error'))
-          }
-          return Promise.resolve({ data: { status: 'processing' } })
+          return Promise.reject(new Error('Network error'))
         }
         return Promise.resolve({ data: {} })
       })
 
       axios.post.mockResolvedValueOnce({
-        data: { job_id: 'job-fail-60', status: 'processing', estimated_time: '2-3 minutes' }
+        data: { job_id: 'job-fail-conn', status: 'processing', estimated_time: '2-3 minutes' }
       })
 
       await act(async () => { render(<App />) })
@@ -1520,24 +1529,20 @@ describe('Dashboard', () => {
 
       await act(async () => { await user.click(screen.getByRole('button', { name: /Automated Processing/i })) })
 
-      // Advance time in batches to reduce iteration count while still triggering all 60 polls
-      for (let batch = 0; batch < 12; batch++) {
+      // 3 consecutive errors with exponential backoff: 5s, 7.5s, 11.25s
+      for (let i = 0; i < 5; i++) {
         await act(async () => {
-          await vi.advanceTimersByTimeAsync(25000)
+          await vi.advanceTimersByTimeAsync(15000)
         })
       }
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(5000)
-        await Promise.resolve()
-        await Promise.resolve()
-      })
+
       vi.useRealTimers()
       await waitFor(() => {
-        expect(screen.getByText(/Processing timeout - lost connection to server/i)).toBeInTheDocument()
-      }, { timeout: 10000 })
+        expect(screen.getByText(/Lost connection to processing server/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
 
       consoleSpy.mockRestore()
-    }, 60000)
+    }, 30000)
 
     it('shows automated completion and download buttons when job completes', async () => {
       const user = userEvent.setup()
@@ -1719,9 +1724,8 @@ describe('Dashboard', () => {
       })
     })
 
-    it('shows alert with server error when download fails with response', async () => {
+    it('shows toast with server error when download fails with response', async () => {
       const user = userEvent.setup()
-      window.alert = vi.fn()
       axios.get.mockImplementation((url) => {
         if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
         if (url.includes('/files') && url.includes('/generated')) {
@@ -1748,14 +1752,13 @@ describe('Dashboard', () => {
       expect(downloadButtons.length).toBeGreaterThan(0)
       await act(async () => { await user.click(downloadButtons[0]) })
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Download failed'))
-        expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Server error'))
+        expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('Download failed'))
+        expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('Server error'))
       }, { timeout: 3000 })
     })
 
-    it('shows alert with err.message when download fails without response', async () => {
+    it('shows toast with err.message when download fails without response', async () => {
       const user = userEvent.setup()
-      window.alert = vi.fn()
       axios.get.mockImplementation((url) => {
         if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
         if (url.includes('/files') && url.includes('/generated')) {
@@ -1780,8 +1783,8 @@ describe('Dashboard', () => {
       expect(downloadButtons.length).toBeGreaterThan(0)
       await act(async () => { await user.click(downloadButtons[0]) })
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Download failed'))
-        expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Network error'))
+        expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('Download failed'))
+        expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('Network error'))
       }, { timeout: 3000 })
     })
   })

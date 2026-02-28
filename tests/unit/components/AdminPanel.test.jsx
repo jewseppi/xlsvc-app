@@ -13,6 +13,18 @@ import axios from 'axios'
 
 vi.mock('axios')
 
+const mockToast = vi.hoisted(() =>
+  Object.assign(vi.fn(), {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  })
+)
+vi.mock('../../../src/components/Toast', () => ({
+  ToastProvider: ({ children }) => children,
+  useToast: () => ({ toast: mockToast }),
+}))
+
 // Mock clipboard API
 Object.assign(navigator, {
   clipboard: {
@@ -75,6 +87,10 @@ describe('AdminPanel', () => {
     localStorage.clear()
     localStorage.setItem('token', 'test-token')
     vi.clearAllMocks()
+    mockToast.mockClear()
+    mockToast.success.mockClear()
+    mockToast.error.mockClear()
+    mockToast.info.mockClear()
     
     // Set up window.location for /app route
     delete window.location
@@ -89,8 +105,6 @@ describe('AdminPanel', () => {
       reload: vi.fn()
     }
 
-    // Mock window functions
-    window.alert = vi.fn()
     window.confirm = vi.fn(() => true)
   })
 
@@ -774,7 +788,7 @@ describe('AdminPanel', () => {
             })
           })
         )
-        expect(window.alert).toHaveBeenCalled()
+        expect(mockToast.success).toHaveBeenCalled()
       }, { timeout: 10000 })
     }, { timeout: 20000 })
 
@@ -815,7 +829,7 @@ describe('AdminPanel', () => {
 
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/cleanup-files'), {}, expect.any(Object))
-        expect(window.alert).toHaveBeenCalledWith('Cleaned up 1 missing files')
+        expect(mockToast.success).toHaveBeenCalledWith('Cleaned up 1 missing files')
       }, { timeout: 5000 })
     })
 
@@ -837,7 +851,7 @@ describe('AdminPanel', () => {
       await userEvent.click(cleanupButton)
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Cleanup failed: Cleanup failed')
+        expect(mockToast.error).toHaveBeenCalledWith('Cleanup failed: Cleanup failed')
       }, { timeout: 5000 })
 
       consoleSpy.mockRestore()
@@ -861,7 +875,7 @@ describe('AdminPanel', () => {
       await userEvent.click(cleanupButton)
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Cleanup failed: Unknown error')
+        expect(mockToast.error).toHaveBeenCalledWith('Cleanup failed: Network error')
       }, { timeout: 5000 })
 
       consoleSpy.mockRestore()
@@ -987,7 +1001,7 @@ describe('AdminPanel', () => {
       await userEvent.click(githubButton)
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalled()
+        expect(mockToast.success).toHaveBeenCalled()
         expect(axios.get).toHaveBeenCalledWith(
           expect.stringContaining('/test-github'),
           expect.objectContaining({
@@ -1008,7 +1022,7 @@ describe('AdminPanel', () => {
       }, { timeout: 10000 })
     }, { timeout: 20000 })
 
-    it('shows error alert when detailed GitHub test fails', async () => {
+    it('shows error toast when detailed GitHub test fails', async () => {
       await renderAdminPanel()
 
       axios.get.mockImplementation((url) => {
@@ -1046,7 +1060,7 @@ describe('AdminPanel', () => {
       await userEvent.click(githubButton)
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
+        expect(mockToast.error).toHaveBeenCalledWith(
           expect.stringMatching(/Test failed:.*Dispatch failed/)
         )
       }, { timeout: 10000 })
@@ -1081,7 +1095,7 @@ describe('AdminPanel', () => {
       await userEvent.click(githubButton)
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
+        expect(mockToast.error).toHaveBeenCalledWith(
           expect.stringMatching(/Test failed:.*Network error/)
         )
       }, { timeout: 10000 })
