@@ -1121,11 +1121,9 @@ describe('Dashboard', () => {
 
     it('detects filter match when history has completed job with same filter rules', async () => {
       const user = userEvent.setup()
+      // Default new rule added by "+ Add Filter Rule" is {column: 'A', value: '0'}
       const matchingFilterRules = [
-        { column: 'F', value: '0' },
-        { column: 'G', value: '0' },
-        { column: 'H', value: '0' },
-        { column: 'I', value: '0' }
+        { column: 'A', value: '0' }
       ]
       const historyWithMatch = [
         {
@@ -1155,10 +1153,16 @@ describe('Dashboard', () => {
 
       await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
 
+      // Add a filter rule so filterRules = [{column: 'A', value: '0'}] matches history
+      await waitFor(() => {
+        expect(screen.getByText(/add filter rule/i)).toBeInTheDocument()
+      })
+      await act(async () => { await user.click(screen.getByText(/add filter rule/i)) })
+
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Automated Processing/i })).toBeInTheDocument()
       })
-      // checkFilterMatch() runs when processingHistory is set from /files/1/history; inner path (filter match) is covered
+      // checkFilterMatch() runs with filterRules matching history; inner every() path is covered
     })
 
     it('checkFilterMatch returns false when completed job has no filter_rules', async () => {

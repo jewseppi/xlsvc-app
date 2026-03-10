@@ -1024,12 +1024,7 @@ function Dashboard({ user, logout }) {
     reports: [],
   });
 
-  const [filterRules, setFilterRules] = useState([
-    { column: "F", value: "0" },
-    { column: "G", value: "0" },
-    { column: "H", value: "0" },
-    { column: "I", value: "0" },
-  ]);
+  const [filterRules, setFilterRules] = useState([]);
   const [columnsToRemove, setColumnsToRemove] = useState([]);
   const [selectedProfileId, setSelectedProfileId] = useState(null);
 
@@ -1071,7 +1066,7 @@ function Dashboard({ user, logout }) {
       const token = localStorage.getItem("token");
       const payload = selectedProfileId
         ? { profile_id: selectedProfileId }
-        : { filter_rules: filterRules, columns_to_remove: columnsToRemove };
+        : { filter_rules: filterRules, columns_to_remove: columnsToRemove.filter(c => c.trim()) };
       const response = await axios.post(
         `${API_BASE}/process-automated/${selectedFile.id}`,
         payload,
@@ -1428,7 +1423,7 @@ function Dashboard({ user, logout }) {
       const token = localStorage.getItem("token");
       const payload = selectedProfileId
         ? { profile_id: selectedProfileId }
-        : { filter_rules: filterRules, columns_to_remove: columnsToRemove };
+        : { filter_rules: filterRules, columns_to_remove: columnsToRemove.filter(c => c.trim()) };
       const response = await axios.post(
         `${API_BASE}/process/${selectedFile.id}`,
         payload,

@@ -84,54 +84,16 @@ const InfoText = styled.p`
   }
 `;
 
-const ColumnsToRemoveSection = styled.div`
-  margin-top: ${(props) => props.theme.spacing.lg};
-  padding: ${(props) => props.theme.spacing.lg};
-  background: ${(props) => props.theme.colors.background.secondary};
-  border: 2px solid ${(props) => props.theme.colors.border.primary};
-  border-radius: ${(props) => props.theme.borderRadius.lg};
-`;
-
-const ColumnsToRemoveTitle = styled.h4`
+const SectionTitle = styled.h4`
   font-size: 0.875rem;
   font-weight: 600;
   color: ${(props) => props.theme.colors.text.primary};
   margin-bottom: ${(props) => props.theme.spacing.sm};
 `;
 
-const ColumnTagList = styled.div`
+const ColumnRemoveRow = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: ${(props) => props.theme.spacing.sm};
-  margin-top: ${(props) => props.theme.spacing.sm};
-`;
-
-const ColumnTag = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${(props) => props.theme.spacing.xs};
-  padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
-  background: ${(props) => props.theme.colors.accent.primary}22;
-  border: 1px solid ${(props) => props.theme.colors.accent.primary};
-  border-radius: ${(props) => props.theme.borderRadius.md};
-  font-size: 0.8rem;
-  color: ${(props) => props.theme.colors.text.primary};
-`;
-
-const ColumnTagRemove = styled.button`
-  background: none;
-  border: none;
-  color: ${(props) => props.theme.colors.accent.error};
-  cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0;
-  line-height: 1;
-`;
-
-const AddColumnRow = styled.div`
-  display: flex;
-  gap: ${(props) => props.theme.spacing.sm};
-  margin-top: ${(props) => props.theme.spacing.sm};
+  gap: ${(props) => props.theme.spacing.md};
   align-items: end;
 `;
 
@@ -168,7 +130,7 @@ function FilterConfiguration({ filterRules, setFilterRules, columnsToRemove, set
                     e.target.value.toUpperCase()
                   )
                 }
-                placeholder="e.g., F or 6"
+                placeholder="F"
               />
             </FormField>
 
@@ -181,7 +143,7 @@ function FilterConfiguration({ filterRules, setFilterRules, columnsToRemove, set
                 onChange={(e) =>
                   updateFilterRule(index, "value", e.target.value)
                 }
-                placeholder="0 for empty/zero, or specific value"
+                placeholder="0"
               />
             </FormField>
 
@@ -201,62 +163,44 @@ function FilterConfiguration({ filterRules, setFilterRules, columnsToRemove, set
       </AddButton>
 
       {columnsToRemove && setColumnsToRemove && (
-        <ColumnsToRemoveSection>
-          <ColumnsToRemoveTitle>Columns to Remove</ColumnsToRemoveTitle>
+        <>
+          <SectionTitle>Columns to Remove</SectionTitle>
           <InfoText style={{ marginBottom: "0.5rem" }}>
             Entire columns removed regardless of content (after row deletion).
           </InfoText>
-          <ColumnTagList>
-            {columnsToRemove.map((col, idx) => (
-              <ColumnTag key={idx}>
-                {col}
-                <ColumnTagRemove
+          {columnsToRemove.map((col, idx) => (
+            <FilterRule key={idx}>
+              <ColumnRemoveRow>
+                <FormField>
+                  <Label htmlFor={`remove-col-${idx}`}>Column</Label>
+                  <Input
+                    id={`remove-col-${idx}`}
+                    type="text"
+                    value={col}
+                    onChange={(e) => {
+                      const updated = [...columnsToRemove];
+                      updated[idx] = e.target.value.toUpperCase();
+                      setColumnsToRemove(updated);
+                    }}
+                    placeholder="A"
+                  />
+                </FormField>
+                <RemoveButton
+                  variant="danger"
                   onClick={() =>
                     setColumnsToRemove(columnsToRemove.filter((_, i) => i !== idx))
                   }
-                  aria-label={`Remove column ${col}`}
+                  aria-label="Remove column entry"
                 >
                   ✕
-                </ColumnTagRemove>
-              </ColumnTag>
-            ))}
-          </ColumnTagList>
-          <AddColumnRow>
-            <Input
-              id="add-column-input"
-              type="text"
-              placeholder="e.g., B"
-              style={{ maxWidth: "80px" }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  const val = e.target.value.trim().toUpperCase();
-                  if (val && /^[A-Z]{1,3}$/.test(val) && !columnsToRemove.includes(val)) {
-                    setColumnsToRemove([...columnsToRemove, val]);
-                    e.target.value = "";
-                  }
-                }
-              }}
-            />
-            <AddButton
-              type="button"
-              variant="ghost"
-              style={{ width: "auto" }}
-              onClick={() => {
-                const input = document.getElementById("add-column-input");
-                if (input) {
-                  const val = input.value.trim().toUpperCase();
-                  if (val && /^[A-Z]{1,3}$/.test(val) && !columnsToRemove.includes(val)) {
-                    setColumnsToRemove([...columnsToRemove, val]);
-                    input.value = "";
-                  }
-                }
-              }}
-            >
-              + Add Column
-            </AddButton>
-          </AddColumnRow>
-        </ColumnsToRemoveSection>
+                </RemoveButton>
+              </ColumnRemoveRow>
+            </FilterRule>
+          ))}
+          <AddButton variant="ghost" onClick={() => setColumnsToRemove([...columnsToRemove, ""])}>
+            + Add Column to Remove
+          </AddButton>
+        </>
       )}
 
       <InfoBox>
