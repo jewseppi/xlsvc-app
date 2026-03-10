@@ -1038,20 +1038,25 @@ function Dashboard({ user, logout }) {
       if (!job.filter_rules || job.filter_rules.length === 0) return false;
       if (job.filter_rules.length !== filterRules.length) return false;
 
-      return filterRules.every((currentRule) =>
+      const rulesMatch = filterRules.every((currentRule) =>
         job.filter_rules.some(
           (jobRule) =>
             jobRule.column === currentRule.column &&
             jobRule.value === currentRule.value
         )
       );
+
+      // Also compare columns_to_remove
+      const jobCols = job.columns_to_remove || [];
+      const colsMatch =
+        jobCols.length === columnsToRemove.length &&
+        columnsToRemove.every((col) => jobCols.includes(col));
+
+      return rulesMatch && colsMatch;
     });
   };
 
   const filtersMatchExisting = selectedFile ? checkFilterMatch() : false;
-
-  // Check if macros already exist for this file
-  const macrosExist = selectedFile ? generatedFiles.macros.length > 0 : false;
 
   const handleAutomatedProcessing = async () => {
     if (!selectedFile) {
@@ -1736,8 +1741,7 @@ function Dashboard({ user, logout }) {
                   onClick={handleProcessFile}
                   disabled={
                     processing ||
-                    jobStatus === "processing" ||
-                    macrosExist
+                    jobStatus === "processing"
                   }
                   style={{ width: "100%", marginTop: "1rem" }}
                 >
