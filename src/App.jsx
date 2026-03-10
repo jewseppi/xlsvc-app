@@ -1024,12 +1024,7 @@ function Dashboard({ user, logout }) {
     reports: [],
   });
 
-  const [filterRules, setFilterRules] = useState([
-    { column: "F", value: "0" },
-    { column: "G", value: "0" },
-    { column: "H", value: "0" },
-    { column: "I", value: "0" },
-  ]);
+  const [filterRules, setFilterRules] = useState([]);
   const [columnsToRemove, setColumnsToRemove] = useState([]);
   const [selectedProfileId, setSelectedProfileId] = useState(null);
 

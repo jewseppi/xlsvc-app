@@ -700,7 +700,7 @@ describe('FilterConfiguration', () => {
 
     it('adds column via Enter key', () => {
       renderWithColumns([])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: 'C' } })
       fireEvent.keyDown(input, { key: 'Enter' })
       expect(mockSetColumnsToRemove).toHaveBeenCalledWith(['C'])
@@ -708,7 +708,7 @@ describe('FilterConfiguration', () => {
 
     it('does not add invalid column via Enter', () => {
       renderWithColumns([])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: '123' } })
       fireEvent.keyDown(input, { key: 'Enter' })
       expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
@@ -716,7 +716,7 @@ describe('FilterConfiguration', () => {
 
     it('does not add duplicate column via Enter', () => {
       renderWithColumns(['B'])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: 'B' } })
       fireEvent.keyDown(input, { key: 'Enter' })
       expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
@@ -724,7 +724,7 @@ describe('FilterConfiguration', () => {
 
     it('ignores non-Enter keys', () => {
       renderWithColumns([])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: 'C' } })
       fireEvent.keyDown(input, { key: 'a' })
       expect(mockSetColumnsToRemove).not.toHaveBeenCalled()
@@ -732,7 +732,7 @@ describe('FilterConfiguration', () => {
 
     it('adds column via Add Column button', () => {
       renderWithColumns([])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: 'Z' } })
       const addBtn = screen.getByText('+ Add Column')
       fireEvent.click(addBtn)
@@ -741,7 +741,7 @@ describe('FilterConfiguration', () => {
 
     it('does not add invalid column via button', () => {
       renderWithColumns([])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: '' } })
       const addBtn = screen.getByText('+ Add Column')
       fireEvent.click(addBtn)
@@ -750,7 +750,7 @@ describe('FilterConfiguration', () => {
 
     it('does not add duplicate column via button', () => {
       renderWithColumns(['A'])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: 'A' } })
       const addBtn = screen.getByText('+ Add Column')
       fireEvent.click(addBtn)
@@ -759,7 +759,7 @@ describe('FilterConfiguration', () => {
 
     it('uppercases input when adding via button', () => {
       renderWithColumns([])
-      const input = screen.getByPlaceholderText('e.g., B')
+      const input = screen.getByPlaceholderText('A')
       fireEvent.change(input, { target: { value: 'c' } })
       const addBtn = screen.getByText('+ Add Column')
       fireEvent.click(addBtn)

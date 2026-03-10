@@ -168,7 +168,7 @@ function FilterConfiguration({ filterRules, setFilterRules, columnsToRemove, set
                     e.target.value.toUpperCase()
                   )
                 }
-                placeholder="e.g., F or 6"
+                placeholder="F"
               />
             </FormField>
 
@@ -181,7 +181,7 @@ function FilterConfiguration({ filterRules, setFilterRules, columnsToRemove, set
                 onChange={(e) =>
                   updateFilterRule(index, "value", e.target.value)
                 }
-                placeholder="0 for empty/zero, or specific value"
+                placeholder="0"
               />
             </FormField>
 
@@ -225,7 +225,7 @@ function FilterConfiguration({ filterRules, setFilterRules, columnsToRemove, set
             <Input
               id="add-column-input"
               type="text"
-              placeholder="e.g., B"
+              placeholder="A"
               style={{ maxWidth: "80px" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
