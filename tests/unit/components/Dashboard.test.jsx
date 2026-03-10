@@ -568,6 +568,67 @@ describe('Dashboard', () => {
       })
     })
 
+    it('disables manual button after processing with same filters, re-enables on filter change', async () => {
+      const user = userEvent.setup()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) {
+          return Promise.resolve({ data: mockUser })
+        }
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) {
+          return Promise.resolve({ data: { history: [] } })
+        }
+        if (url.includes('/files')) {
+          return Promise.resolve({ data: { files: mockFiles } })
+        }
+        if (url.includes('/filter-profiles')) {
+          return Promise.resolve({ data: { profiles: [] } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockResolvedValueOnce({
+        data: {
+          processed_file_id: 10,
+          download_filename: 'processed.xlsx',
+          deleted_rows: 5,
+          processing_log: ['Done'],
+          total_rows_to_delete: 5,
+          sheets_affected: ['Sheet1'],
+          hasRowsToDelete: true,
+          downloads: {
+            macro: { file_id: 11, filename: 'macro.bas' },
+            instructions: { file_id: 12, filename: 'instructions.txt' }
+          }
+        }
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+      await waitFor(() => { expect(screen.getByRole('button', { name: /Generate Macro/i })).toBeInTheDocument() })
+
+      // Process the file
+      await act(async () => { await user.click(screen.getByRole('button', { name: /Generate Macro/i })) })
+
+      // After processing, the manual button should be disabled (same filters)
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Generate Macro/i })).toBeDisabled()
+      })
+
+      // Add a new filter rule to change the ruleset
+      const addFilterButton = screen.getByText('+ Add Filter Rule')
+      await act(async () => { await user.click(addFilterButton) })
+
+      // Now the manual button should be re-enabled (different filters)
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Generate Macro/i })).not.toBeDisabled()
+      })
+    })
+
     it('shows processing log after processing', async () => {
       const user = userEvent.setup()
       

@@ -1027,6 +1027,31 @@ function Dashboard({ user, logout }) {
   const [filterRules, setFilterRules] = useState([]);
   const [columnsToRemove, setColumnsToRemove] = useState([]);
   const [selectedProfileId, setSelectedProfileId] = useState(null);
+  const [lastManualFilters, setLastManualFilters] = useState(null);
+
+  // Check if current filters match the last manual processing run
+  const manualFiltersMatch = () => {
+    if (!lastManualFilters) return false;
+
+    const { rules: prevRules, columns: prevCols } = lastManualFilters;
+
+    if (prevRules.length !== filterRules.length) return false;
+
+    const rulesMatch = filterRules.every((currentRule) =>
+      prevRules.some(
+        (prevRule) =>
+          prevRule.column === currentRule.column &&
+          prevRule.value === currentRule.value
+      )
+    );
+
+    const currentCols = columnsToRemove.filter((c) => c.trim());
+    const colsMatch =
+      prevCols.length === currentCols.length &&
+      currentCols.every((col) => prevCols.includes(col));
+
+    return rulesMatch && colsMatch;
+  };
 
   // Check if current filters match any completed job (for automated processing)
   const checkFilterMatch = () => {
@@ -1280,6 +1305,7 @@ function Dashboard({ user, logout }) {
 
   // Load generated files when selected file changes
   useEffect(() => {
+    setLastManualFilters(null);
     if (selectedFile) {
       loadGeneratedFiles(selectedFile.id);
     } else {
@@ -1456,6 +1482,12 @@ function Dashboard({ user, logout }) {
         totalRows: result.total_rows_to_delete,
         sheetsAffected: result.sheets_affected,
         downloads: result.downloads, // { macro: {...}, instructions: {...} }
+      });
+
+      // Track which filters were used for this manual run
+      setLastManualFilters({
+        rules: [...filterRules],
+        columns: columnsToRemove.filter((c) => c.trim()),
       });
 
       loadFiles();
@@ -1741,7 +1773,8 @@ function Dashboard({ user, logout }) {
                   onClick={handleProcessFile}
                   disabled={
                     processing ||
-                    jobStatus === "processing"
+                    jobStatus === "processing" ||
+                    manualFiltersMatch()
                   }
                   style={{ width: "100%", marginTop: "1rem" }}
                 >
