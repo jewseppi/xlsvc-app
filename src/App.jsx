@@ -1066,7 +1066,7 @@ function Dashboard({ user, logout }) {
       const token = localStorage.getItem("token");
       const payload = selectedProfileId
         ? { profile_id: selectedProfileId }
-        : { filter_rules: filterRules, columns_to_remove: columnsToRemove };
+        : { filter_rules: filterRules, columns_to_remove: columnsToRemove.filter(c => c.trim()) };
       const response = await axios.post(
         `${API_BASE}/process-automated/${selectedFile.id}`,
         payload,
@@ -1423,7 +1423,7 @@ function Dashboard({ user, logout }) {
       const token = localStorage.getItem("token");
       const payload = selectedProfileId
         ? { profile_id: selectedProfileId }
-        : { filter_rules: filterRules, columns_to_remove: columnsToRemove };
+        : { filter_rules: filterRules, columns_to_remove: columnsToRemove.filter(c => c.trim()) };
       const response = await axios.post(
         `${API_BASE}/process/${selectedFile.id}`,
         payload,
