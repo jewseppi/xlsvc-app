@@ -28,7 +28,8 @@ export default defineConfig({
         '**/dist/',
         '**/build/',
         '**/*.test.{js,jsx,ts,tsx}',
-        '**/*.spec.{js,jsx,ts,tsx}'
+        '**/*.spec.{js,jsx,ts,tsx}',
+        'scripts/'
       ],
       thresholds: {
         lines: 100,
