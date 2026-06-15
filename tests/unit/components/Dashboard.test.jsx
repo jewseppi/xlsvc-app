@@ -2439,7 +2439,7 @@ describe('Dashboard', () => {
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(
           expect.stringContaining('/process/1'),
-          expect.objectContaining({ profile_id: 42 }),
+          expect.objectContaining({ profile_id: 42, columns_to_remove: expect.any(Array) }),
           expect.any(Object)
         )
       })
@@ -2458,7 +2458,7 @@ describe('Dashboard', () => {
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(
           expect.stringContaining('/process-automated/1'),
-          expect.objectContaining({ profile_id: 42 }),
+          expect.objectContaining({ profile_id: 42, columns_to_remove: expect.any(Array) }),
           expect.any(Object)
         )
       })
