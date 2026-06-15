@@ -340,6 +340,45 @@ describe('Dashboard', () => {
       })
     })
 
+    it('uploads large files via the chunked endpoints', async () => {
+      await renderDashboard()
+
+      const file = new File(['x'], 'huge.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+      Object.defineProperty(file, 'size', { value: 60 * 1024 * 1024 }) // > CHUNK_THRESHOLD
+
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/upload/init')) {
+          return Promise.resolve({ data: { upload_id: 'chunked-1', chunk_size: 8 * 1024 * 1024 } })
+        }
+        if (url.includes('/upload/chunk/')) return Promise.resolve({ data: { received_bytes: 1 } })
+        if (url.includes('/upload/complete/')) {
+          return Promise.resolve({ data: { file_id: 99, filename: 'huge.xlsx', duplicate: false } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      const fileInput = document.querySelector('input[type="file"]')
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [file] } })
+      })
+
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/upload/init'),
+          expect.objectContaining({ filename: 'huge.xlsx', total_chunks: expect.any(Number) }),
+          expect.any(Object)
+        )
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/upload/complete/chunked-1'),
+          expect.anything(),
+          expect.any(Object)
+        )
+        expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining('success'))
+      })
+    })
+
     it('handles duplicate file upload', async () => {
       await renderDashboard()
       
@@ -821,6 +860,38 @@ describe('Dashboard', () => {
       })
 
       consoleSpy.mockRestore()
+    })
+
+    it('guides user to automated processing when inline process returns 413', async () => {
+      const user = userEvent.setup()
+
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/profile')) return Promise.resolve({ data: mockUser })
+        if (url.includes('/files') && url.includes('/generated')) {
+          return Promise.resolve({ data: { macros: [], instructions: [], reports: [], processed: [] } })
+        }
+        if (url.includes('/files') && url.includes('/history')) return Promise.resolve({ data: { history: [] } })
+        if (url.includes('/files')) return Promise.resolve({ data: { files: mockFiles } })
+        return Promise.resolve({ data: {} })
+      })
+
+      axios.post.mockImplementation((url) => {
+        if (url.includes('/process/')) {
+          return Promise.reject({ response: { status: 413, data: { use_automated: true } } })
+        }
+        return Promise.resolve({ data: {} })
+      })
+
+      await act(async () => { render(<App />) })
+      await waitFor(() => { expect(screen.getByText('test-file.xlsx')).toBeInTheDocument() })
+      await act(async () => { await user.click(screen.getByText('test-file.xlsx')) })
+      await waitFor(() => { expect(screen.getByRole('button', { name: /Generate Macro/i })).toBeInTheDocument() })
+      await act(async () => { await user.click(screen.getByRole('button', { name: /Generate Macro/i })) })
+
+      await waitFor(() => {
+        expect(screen.getByText(/legacy \.xls format for standard processing/i)).toBeInTheDocument()
+        expect(mockToast.error).toHaveBeenCalledWith('Use Automated Processing for this file')
+      })
     })
 
     it('shows Unknown error when manual process fails with no response', async () => {
