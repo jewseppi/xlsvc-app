@@ -122,6 +122,7 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 import { API_BASE } from "./apiBase";
+import { uploadInChunks, CHUNK_THRESHOLD } from "./utils/uploadInChunks";
 import { getApiErrorMessage } from "./utils/getApiErrorMessage";
 
 // Error Boundary Fallback Component
@@ -1352,25 +1353,30 @@ function Dashboard({ user, logout }) {
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
       const token = localStorage.getItem("token");
-      const response = await axios.post(`${API_BASE}/upload`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 300000, // 5 minutes
-        onUploadProgress: (progressEvent) => {
-          const progress = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setUploadProgress(progress);
-        },
-      });
+      let result;
+      if (file.size > CHUNK_THRESHOLD) {
+        // Large files are uploaded in chunks to stay under per-request limits.
+        result = await uploadInChunks(file, API_BASE, token, setUploadProgress);
+      } else {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const result = response.data;
+        const response = await axios.post(`${API_BASE}/upload`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 300000, // 5 minutes
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(progress);
+          },
+        });
+        result = response.data;
+      }
 
       if (result.duplicate) {
         toast.info(`File "${result.filename}" already exists. Selecting existing file.`);
@@ -1496,6 +1502,15 @@ function Dashboard({ user, logout }) {
         loadGeneratedFiles(selectedFile.id);
       }
     } catch (err) {
+      if (err.response?.status === 413 && err.response?.data?.use_automated) {
+        // File is too large or a legacy .xls for inline processing.
+        setProcessingLog([
+          "This file is too large or in a legacy .xls format for standard processing.",
+          'Please use the "Automated Processing" option for this file.',
+        ]);
+        toast.error("Use Automated Processing for this file");
+        return;
+      }
       console.error("Processing error:", err);
       setProcessingLog([
         "Processing failed!",
