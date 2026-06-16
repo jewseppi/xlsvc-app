@@ -1625,8 +1625,8 @@ describe('Dashboard', () => {
 
       await act(async () => { await user.click(screen.getByRole('button', { name: /Automated Processing/i })) })
 
-      // 60 polls at 5s each = 300s; advance so all 60 run and we hit attempts >= maxAttempts
-      await vi.advanceTimersByTimeAsync(310000)
+      // 360 polls at 5s each = 1800s; advance so all run and we hit attempts >= maxAttempts
+      await vi.advanceTimersByTimeAsync(1810000)
 
       await waitFor(() => {
         expect(screen.getByText(/Processing timeout - job may still be running/i)).toBeInTheDocument()
