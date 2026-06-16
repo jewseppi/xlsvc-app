@@ -2534,5 +2534,62 @@ describe('Dashboard', () => {
         )
       })
     })
+
+    it('deselects the profile when a filter rule is edited manually', async () => {
+      await setupWithProfile()
+      const select = screen.getByLabelText(/filter profile/i)
+      expect(select.value).toBe('42')
+      // Editing the first row-filter column should switch back to Manual.
+      await act(async () => {
+        fireEvent.change(document.getElementById('column-0'), { target: { value: 'G' } })
+      })
+      expect(select.value).toBe('manual')
+    })
+
+    it('deselects the profile when adding a column to remove', async () => {
+      const user = await setupWithProfile()
+      const select = screen.getByLabelText(/filter profile/i)
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Add Column to Remove/i }))
+      })
+      expect(select.value).toBe('manual')
+    })
+
+    it('sends expanded column range and sheets-to-remove in the payload', async () => {
+      const user = await setupWithProfile()
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Column Range to Remove/i }))
+      })
+      await act(async () => {
+        fireEvent.change(document.getElementById('column-range'), { target: { value: 'A-C' } })
+      })
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Remove Sheets/i }))
+      })
+      await act(async () => {
+        fireEvent.change(document.getElementById('sheets-to-remove'), { target: { value: 'Summary, 2' } })
+      })
+
+      axios.post.mockResolvedValueOnce({
+        data: {
+          processed_file_id: 1, download_filename: 'p.xlsx', deleted_rows: 0,
+          processing_log: [], total_rows_to_delete: 0, sheets_affected: [], downloads: {},
+        },
+      })
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Generate Macro/i }))
+      })
+
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/process/1'),
+          expect.objectContaining({
+            columns_to_remove: expect.arrayContaining(['A', 'B', 'C']),
+            sheets_to_remove: ['Summary', '2'],
+          }),
+          expect.any(Object)
+        )
+      })
+    })
   })
 })
