@@ -124,6 +124,8 @@ const GlobalStyle = createGlobalStyle`
 import { API_BASE } from "./apiBase";
 import { uploadInChunks, CHUNK_THRESHOLD } from "./utils/uploadInChunks";
 import { getApiErrorMessage } from "./utils/getApiErrorMessage";
+import { parseColumnRange } from "./utils/parseColumnRange";
+import { parseSheetList } from "./utils/parseSheetList";
 
 // Error Boundary Fallback Component
 function ErrorFallback({error, resetErrorBoundary}) {
@@ -1027,8 +1029,28 @@ function Dashboard({ user, logout }) {
 
   const [filterRules, setFilterRules] = useState([]);
   const [columnsToRemove, setColumnsToRemove] = useState([]);
+  const [columnRange, setColumnRange] = useState("");
+  const [sheetsToRemove, setSheetsToRemove] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState(null);
   const [lastManualFilters, setLastManualFilters] = useState(null);
+
+  // Editing filters manually deselects any active profile, so the UI doesn't
+  // keep showing a profile whose settings you've since diverged from.
+  const clearProfile = () => setSelectedProfileId(null);
+  const editFilterRules = (rules) => { setFilterRules(rules); clearProfile(); };
+  const editColumnsToRemove = (cols) => { setColumnsToRemove(cols); clearProfile(); };
+  const editColumnRange = (v) => { setColumnRange(v); clearProfile(); };
+  const editSheetsToRemove = (v) => { setSheetsToRemove(v); clearProfile(); };
+
+  // Removal lists sent to the backend: explicit columns plus any expanded
+  // "column range", de-duplicated, and the parsed sheet list.
+  const buildRemovalLists = () => ({
+    columns_to_remove: [...new Set([
+      ...columnsToRemove.map((c) => c.trim().toUpperCase()).filter(Boolean),
+      ...parseColumnRange(columnRange),
+    ])],
+    sheets_to_remove: parseSheetList(sheetsToRemove),
+  });
 
   // Check if current filters match the last manual processing run
   const manualFiltersMatch = () => {
@@ -1095,9 +1117,10 @@ function Dashboard({ user, logout }) {
 
     try {
       const token = localStorage.getItem("token");
+      const { columns_to_remove, sheets_to_remove } = buildRemovalLists();
       const payload = selectedProfileId
-        ? { profile_id: selectedProfileId, columns_to_remove: columnsToRemove.filter(c => c.trim()) }
-        : { filter_rules: filterRules, columns_to_remove: columnsToRemove.filter(c => c.trim()) };
+        ? { profile_id: selectedProfileId, columns_to_remove, sheets_to_remove }
+        : { filter_rules: filterRules, columns_to_remove, sheets_to_remove };
       const response = await axios.post(
         `${API_BASE}/process-automated/${selectedFile.id}`,
         payload,
@@ -1458,9 +1481,10 @@ function Dashboard({ user, logout }) {
 
     try {
       const token = localStorage.getItem("token");
+      const { columns_to_remove, sheets_to_remove } = buildRemovalLists();
       const payload = selectedProfileId
-        ? { profile_id: selectedProfileId, columns_to_remove: columnsToRemove.filter(c => c.trim()) }
-        : { filter_rules: filterRules, columns_to_remove: columnsToRemove.filter(c => c.trim()) };
+        ? { profile_id: selectedProfileId, columns_to_remove, sheets_to_remove }
+        : { filter_rules: filterRules, columns_to_remove, sheets_to_remove };
       const response = await axios.post(
         `${API_BASE}/process/${selectedFile.id}`,
         payload,
@@ -1767,9 +1791,13 @@ function Dashboard({ user, logout }) {
 
                     <FilterConfiguration
                       filterRules={filterRules}
-                      setFilterRules={setFilterRules}
+                      setFilterRules={editFilterRules}
                       columnsToRemove={columnsToRemove}
-                      setColumnsToRemove={setColumnsToRemove}
+                      setColumnsToRemove={editColumnsToRemove}
+                      columnRange={columnRange}
+                      setColumnRange={editColumnRange}
+                      sheetsToRemove={sheetsToRemove}
+                      setSheetsToRemove={editSheetsToRemove}
                     />
                   </ProcessingSection>
                 ) : (
