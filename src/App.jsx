@@ -1220,7 +1220,7 @@ function Dashboard({ user, logout }) {
   const pollJobStatus = async (jobId) => {
     const token = localStorage.getItem("token");
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes max (5 second intervals)
+    const maxAttempts = 360; // 30 minutes max (5 second intervals) — large files take longer
 
     const poll = async () => {
       try {
