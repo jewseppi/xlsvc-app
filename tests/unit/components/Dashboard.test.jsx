@@ -1731,7 +1731,7 @@ describe('Dashboard', () => {
         await user.click(screen.getByRole('button', { name: /View Deleted Rows/i }))
       })
       // Numbers-compatible copy button + note
-      expect(screen.getByText(/simplified for Apple Numbers compatibility/i)).toBeInTheDocument()
+      expect(screen.getByText(/simplified for Apple Numbers/i)).toBeInTheDocument()
       await act(async () => {
         await user.click(screen.getByRole('button', { name: /Download for Apple Numbers/i }))
       })

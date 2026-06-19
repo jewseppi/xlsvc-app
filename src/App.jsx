@@ -1925,8 +1925,9 @@ function Dashboard({ user, logout }) {
                         {processedFile.numbersFileId && (
                           <>
                             <br />
-                            🍎 Numbers copy keeps images; cell formatting is
-                            simplified for Apple Numbers compatibility
+                            🍎 Numbers copy keeps images, colors, and formatting
+                            (some fonts/number formats simplified for Apple
+                            Numbers)
                           </>
                         )}
                       </div>
