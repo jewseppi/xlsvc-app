@@ -1,0 +1,45 @@
+---
+description: Frontend coding conventions for xlsvc React app
+globs: "**/*.{js,jsx}"
+alwaysApply: false
+---
+
+# Frontend Conventions
+
+## Architecture
+
+- React 19 SPA with React Router v6 (routes: `/` landing, `/app` dashboard).
+- State: local `useState` in App.jsx. No Redux/Zustand. Auth token in `localStorage`.
+- Styling: styled-components (in `src/styled/`) + Tailwind CSS. Theme in `src/styled/theme.js`.
+- HTTP: axios with `API_BASE` from `src/apiBase.js`.
+
+## Components
+
+- `src/App.jsx`: Main app with auth, dashboard, admin panel (large file, ~2000 lines).
+- `src/components/`: Extracted components (FilterConfiguration, GeneratedFiles, LandingPage, ProcessingHistory).
+- `src/styled/`: Styled component definitions organized by feature area.
+
+## API Calls
+
+- All API calls use axios with `API_BASE` prefix.
+- Auth header: `Authorization: Bearer ${token}` (token from localStorage).
+- Error extraction: use `getApiErrorMessage()` from `src/utils/getApiErrorMessage.js`.
+
+## Testing
+
+- Unit: Vitest + React Testing Library. Config in `tests/vitest.config.js`. Tests in `tests/unit/`.
+- E2E: Playwright (Chromium). Config in `playwright.config.js`. Tests in `tests/e2e/`.
+- API coverage: `tests/unit/api/api-coverage.test.js` verifies all backend endpoints are tested.
+- Setup file: `tests/vitest.setup.js` (localStorage mock, location mock, matchMedia mock, fetch mock).
+
+## File Structure
+
+```
+src/
+  App.jsx          # Main app (auth + dashboard + admin)
+  apiBase.js       # API URL config
+  main.jsx         # Entry point (excluded from coverage)
+  components/      # Extracted React components
+  styled/          # Styled-components by feature
+  utils/           # Utility functions
+```

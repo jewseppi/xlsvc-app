@@ -1246,6 +1246,8 @@ function Dashboard({ user, logout }) {
             downloadFilename: status.download_filename,
             reportFileId: status.report_file_id,
             reportFilename: status.report_filename,
+            numbersFileId: status.numbers_file_id,
+            numbersFilename: status.numbers_filename,
           });
           
           // Refresh generated files and file list after processing completes
@@ -1892,6 +1894,20 @@ function Dashboard({ user, logout }) {
                           📊 View Deleted Rows
                         </Button>
                       )}
+                      {processedFile.numbersFileId && (
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            handleDownload(
+                              processedFile.numbersFileId,
+                              processedFile.numbersFilename
+                            )
+                          }
+                          style={{ width: "100%", marginTop: "0.5rem" }}
+                        >
+                          🍎 Download for Apple Numbers
+                        </Button>
+                      )}
                       <div
                         style={{
                           marginTop: "1rem",
@@ -1906,6 +1922,14 @@ function Dashboard({ user, logout }) {
                         <br />
                         🤖 Processed automatically on secure GitHub
                         infrastructure
+                        {processedFile.numbersFileId && (
+                          <>
+                            <br />
+                            🍎 Numbers copy keeps images, colors, and formatting
+                            (some fonts/number formats simplified for Apple
+                            Numbers)
+                          </>
+                        )}
                       </div>
                     </DownloadSection>
                   )}

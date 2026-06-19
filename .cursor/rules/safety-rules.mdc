@@ -1,0 +1,30 @@
+---
+description: Critical safety rules for the xlsvc frontend. NEVER violate these.
+alwaysApply: true
+---
+
+# Safety Rules
+
+## Testing
+
+- Unit test coverage thresholds: lines 100%, statements 100%, branches 100%, functions 98.5%. Never lower them.
+- E2E coverage thresholds: all 100%. Never lower them.
+- If adding new UI code, add corresponding unit and/or E2E tests.
+- Use `/* v8 ignore next */` sparingly and only for genuinely unreachable defensive branches. Document why.
+
+## Landing Page
+
+- `public/landing.html` is a static SEO page served at `/`. It has its own subscribe form that calls `POST /api/subscribe` on the backend.
+- Do not assume it's unused. Do not remove or modify it without confirmation.
+- Changes to `landing.html` may affect SEO (meta tags, structured data, canonical URL).
+
+## API Base
+
+- Dev: `http://127.0.0.1:5000/api` | Prod: `https://api.xlsvc.jsilverman.ca/api`
+- Defined in `src/apiBase.js`. Both environments use the `/api` path prefix.
+- If changing API URLs, coordinate with the backend repo.
+
+## Build & Deploy
+
+- Vite builds to `dist/`. Deploy process moves React files to `/app/` subfolder, landing page stays at root.
+- `base` in `vite.config.js` is `/app/` for production, `/` for dev/E2E. Don't change without understanding the deploy script.

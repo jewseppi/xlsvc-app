@@ -1,0 +1,25 @@
+---
+description: Frontend test and reporting guardrails for intentional UI changes.
+globs: "**/*.{js,jsx}"
+alwaysApply: false
+---
+
+# Frontend Testing and Reporting
+
+## Test Expectations
+
+- Keep existing unit and E2E coverage thresholds intact.
+- New UI behavior must be covered by tests in the same change.
+
+## Regression Rule
+
+- If existing behavior changes unintentionally, stop and revise implementation.
+- Treat unrelated failures as regressions, not acceptable fallout.
+
+## Intentional UI Change Rule
+
+- When changing UI behavior intentionally, update impacted tests and provide a UI Test Change Report:
+  - tests updated and why
+  - tests added
+  - tests removed (if any) with justification
+  - post-change pass/coverage summary
