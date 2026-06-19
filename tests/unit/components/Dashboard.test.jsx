@@ -1699,7 +1699,9 @@ describe('Dashboard', () => {
               download_file_id: 20,
               download_filename: 'processed.xlsx',
               report_file_id: 21,
-              report_filename: 'report.xlsx'
+              report_filename: 'report.xlsx',
+              numbers_file_id: 22,
+              numbers_filename: 'Numbers_processed.xlsx'
             }
           })
         }
@@ -1727,6 +1729,11 @@ describe('Dashboard', () => {
       })
       await act(async () => {
         await user.click(screen.getByRole('button', { name: /View Deleted Rows/i }))
+      })
+      // Numbers-compatible copy button + note
+      expect(screen.getByText(/simplified for Apple Numbers compatibility/i)).toBeInTheDocument()
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /Download for Apple Numbers/i }))
       })
       expect(screen.getByText(/Automated Processing Complete/i)).toBeInTheDocument()
     })
