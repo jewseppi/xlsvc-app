@@ -232,6 +232,7 @@ function AuthPage({ setUser }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [invitationToken, setInvitationToken] = useState(null);
+  const [resetToken, setResetToken] = useState(null);
   const [passwordRequirements, setPasswordRequirements] = useState({
     length: false,
     uppercase: false,
@@ -245,8 +246,23 @@ function AuthPage({ setUser }) {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     const registerParam = urlParams.get("register");
-    
-    if (token && registerParam === "1") {
+    const resetParam = urlParams.get("reset");
+
+    if (token && resetParam === "1") {
+      setResetToken(token);
+      setIsLogin(false);
+
+      axios
+        .post(`${API_BASE}/validate-reset-token`, { token })
+        .then((response) => {
+          if (response.data.valid) {
+            setEmail(response.data.email);
+          }
+        })
+        .catch((err) => {
+          setError(err.response?.data?.error || "Invalid password reset link");
+        });
+    } else if (token && registerParam === "1") {
       setInvitationToken(token);
       setIsLogin(false);
       
@@ -294,7 +310,30 @@ function AuthPage({ setUser }) {
     setError("");
 
     try {
-      if (invitationToken && !isLogin) {
+      if (resetToken) {
+        // Password reset with admin-issued token
+        if (!isPasswordValid) {
+          setError("Password does not meet all requirements");
+          setLoading(false);
+          return;
+        }
+
+        const response = await axios.post(`${API_BASE}/reset-password`, {
+          token: resetToken,
+          password,
+        });
+
+        const { access_token } = response.data;
+        localStorage.setItem("token", access_token);
+        // Drop the token from the address bar so it can't be reused from history
+        window.history.replaceState({}, "", window.location.pathname);
+
+        const profileResponse = await axios.get(`${API_BASE}/profile`, {
+          headers: { Authorization: `Bearer ${access_token}` },
+        });
+
+        setUser(profileResponse.data);
+      } else if (invitationToken && !isLogin) {
         // Registration with invitation token
         if (!isPasswordValid) {
           setError("Password does not meet all requirements");
@@ -349,14 +388,16 @@ function AuthPage({ setUser }) {
       <AuthCard>
         <AuthTitle>Excel Processor</AuthTitle>
         <AuthSubtitle>
-          {invitationToken
+          {resetToken
+            ? "Choose a new password"
+            : invitationToken
             ? "Create your account"
             : isLogin
             ? "Sign in to your account"
             : "Registration requires an invitation"}
         </AuthSubtitle>
 
-        {!invitationToken && !isLogin && (
+        {!invitationToken && !resetToken && !isLogin && (
           <div style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
             <p>Registration is by invitation only.</p>
             <p style={{ fontSize: "0.875rem", marginTop: "0.5rem" }}>
@@ -378,11 +419,11 @@ function AuthPage({ setUser }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              disabled={!!invitationToken}
+              disabled={!!invitationToken || !!resetToken}
             />
-            {invitationToken && (
+            {(invitationToken || resetToken) && (
               <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                Email from invitation link
+                {resetToken ? "Email from reset link" : "Email from invitation link"}
               </p>
             )}
           </FormGroup>
@@ -396,7 +437,7 @@ function AuthPage({ setUser }) {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={resetToken ? "Enter a new password" : "Enter your password"}
             />
             {!isLogin && (
               <div style={{ marginTop: "0.75rem", fontSize: "0.875rem" }}>
@@ -439,7 +480,15 @@ function AuthPage({ setUser }) {
             )}
           </FormGroup>
 
-          {isLogin ? (
+          {resetToken ? (
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={loading || !isPasswordValid}
+            >
+              {loading ? "Saving..." : "Set new password"}
+            </Button>
+          ) : isLogin ? (
             <>
               <Button type="submit" variant="primary" disabled={loading}>
                 {loading ? "Processing..." : "Sign in"}
@@ -490,6 +539,8 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { user, details }
+  const [resetLink, setResetLink] = useState(null); // { email, url }
+  const [resetCopied, setResetCopied] = useState(false);
 
   // Load invitations and users on mount
   useEffect(() => {
@@ -614,6 +665,33 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
       console.error("Error fetching user details:", err);
       setErrorMessage(getApiErrorMessage(err, "Failed to load user details"));
     }
+  };
+
+  const handleGenerateResetLink = async (user) => {
+    if (!confirm(`Generate a password reset link for ${user.email}? Any earlier reset link for this user will stop working.`)) {
+      return;
+    }
+    setErrorMessage("");
+    setResetCopied(false);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiBase}/admin/users/${user.id}/reset-link`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setResetLink({ email: response.data.email, url: response.data.reset_url });
+    } catch (err) {
+      console.error("Error generating reset link:", err);
+      setErrorMessage(getApiErrorMessage(err, "Failed to generate reset link"));
+    }
+  };
+
+  const handleCopyResetLink = () => {
+    navigator.clipboard.writeText(resetLink.url).then(() => {
+      setResetCopied(true);
+      setTimeout(() => setResetCopied(false), 3000);
+    });
   };
 
   const confirmDeleteUser = async () => {
@@ -894,18 +972,75 @@ function AdminPanel({ apiBase, onCleanup, onDebug, onTestGitHub, currentUser }) 
                   {currentUser && currentUser.email === user.email ? (
                     <span style={{ color: "#8b8b92", fontSize: "0.75rem" }}>Current user</span>
                   ) : (
-                    <Button
-                      variant="ghost"
-                      $small
-                      onClick={() => handleDeleteUser(user)}
-                      style={{ whiteSpace: "nowrap", marginLeft: "0.5rem", color: "#ef4444" }}
-                    >
-                      Delete
-                    </Button>
+                    <div style={{ display: "flex", gap: "0.25rem", marginLeft: "0.5rem" }}>
+                      <Button
+                        variant="ghost"
+                        $small
+                        onClick={() => handleGenerateResetLink(user)}
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        Reset password
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        $small
+                        onClick={() => handleDeleteUser(user)}
+                        style={{ whiteSpace: "nowrap", color: "#ef4444" }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   )}
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {resetLink && (
+          <div
+            data-testid="reset-link-panel"
+            style={{
+              marginTop: "1rem",
+              padding: "1.25rem",
+              backgroundColor: "rgba(59, 130, 246, 0.1)",
+              borderRadius: "8px",
+              border: "2px solid rgba(59, 130, 246, 0.3)",
+            }}
+          >
+            <div style={{ marginBottom: "0.75rem", fontWeight: 600, fontSize: "0.95rem", color: "#ffffff" }}>
+              Password reset link for {resetLink.email}:
+            </div>
+            <textarea
+              aria-label="Password reset link"
+              value={resetLink.url}
+              readOnly
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                fontSize: "0.9rem",
+                fontFamily: "monospace",
+                backgroundColor: "#1e1e22",
+                border: "1px solid #2a2a2f",
+                borderRadius: "6px",
+                minHeight: "80px",
+                resize: "vertical",
+                color: "#ffffff",
+                wordBreak: "break-all",
+              }}
+              onClick={(e) => e.target.select()}
+            />
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+              <Button variant="secondary" onClick={handleCopyResetLink} style={{ flex: 1 }}>
+                {resetCopied ? "✓ Copied" : "📋 Copy to Clipboard"}
+              </Button>
+              <Button variant="ghost" onClick={() => setResetLink(null)}>
+                Done
+              </Button>
+            </div>
+            <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "#8b8b92" }}>
+              Single use, expires in 24 hours. Send it to the user directly. Their current password keeps working until they set a new one.
+            </div>
           </div>
         )}
       </div>
