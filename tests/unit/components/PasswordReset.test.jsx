@@ -155,20 +155,6 @@ describe('Password reset – AuthPage', () => {
   })
 })
 
-describe('Password reset – login hint', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    vi.clearAllMocks()
-    setLocation('')
-    axios.get.mockResolvedValue({ data: null })
-  })
-
-  it('tells users to ask an admin for a reset link', async () => {
-    await renderApp()
-    expect(await screen.findByText(/Ask your administrator for a reset link/i)).toBeInTheDocument()
-  })
-})
-
 describe('Password reset – AdminPanel', () => {
   const admin = { id: 2, email: 'admin@example.com', is_admin: true }
   const users = [

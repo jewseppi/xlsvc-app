@@ -502,9 +502,6 @@ function AuthPage({ setUser }) {
                   Don't have an account? Registration requires an invitation
                 </Button>
               </CenterText>
-              <p style={{ fontSize: "0.8rem", color: "#6b7280", textAlign: "center", marginTop: "0.5rem" }}>
-                Forgot your password? Ask your administrator for a reset link.
-              </p>
             </>
           ) : invitationToken ? (
             <Button
